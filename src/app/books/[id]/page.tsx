@@ -1,76 +1,74 @@
 import Link from "next/link";
+import { bookOperations } from "@/lib/database";
+import { notFound } from "next/navigation";
 
-// Sample book data - in a real app, this would come from an API or database
-const sampleBooks = [
-  { id: "1", title: "The Great Gatsby", author: "F. Scott Fitzgerald", year: 1925, description: "A story of the fabulously wealthy Jay Gatsby and his love for the beautiful Daisy Buchanan." },
-  { id: "2", title: "To Kill a Mockingbird", author: "Harper Lee", year: 1960, description: "The story of young Scout Finch and her father Atticus in a racially divided Alabama town." },
-  { id: "3", title: "1984", author: "George Orwell", year: 1949, description: "A dystopian novel about totalitarianism and surveillance society." },
-];
+// This is a Server Component that fetches data directly from the database
+async function getBook(id: string) {
+  try {
+    const bookId = parseInt(id);
+    if (isNaN(bookId)) {
+      return null;
+    }
+    return bookOperations.getById(bookId);
+  } catch (error) {
+    console.error('Error fetching book:', error);
+    return null;
+  }
+}
 
-export default function BookDetailPage({ params }: { params: { id: string } }) {
-  const book = sampleBooks.find(b => b.id === params.id);
+export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const book = await getBook(id);
 
   if (!book) {
-    return (
-      <div className="max-w-2xl mx-auto p-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Book Not Found
-          </h1>
-          <Link 
-            href="/books"
-            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-          >
-            ← Back to Books
-          </Link>
-        </div>
-      </div>
-    );
+    notFound();
   }
 
   return (
     <div className="max-w-2xl mx-auto p-6">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-bold text-gray-900">
           Book Details
         </h1>
         <Link 
           href="/books"
-          className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+          className="text-gray-600 hover:text-gray-900 transition-colors"
         >
           ← Back to Books
         </Link>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <div className="bg-white shadow rounded-lg p-6">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-gray-700">
               Title
             </label>
-            <p className="mt-1 text-lg text-gray-900 dark:text-white">{book.title}</p>
+            <p className="mt-1 text-lg text-gray-900">{book.title}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-gray-700">
               Author
             </label>
-            <p className="mt-1 text-lg text-gray-900 dark:text-white">{book.author}</p>
+            <p className="mt-1 text-lg text-gray-900">{book.author}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-gray-700">
               Publication Year
             </label>
-            <p className="mt-1 text-lg text-gray-900 dark:text-white">{book.year}</p>
+            <p className="mt-1 text-lg text-gray-900">{book.year}</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
-            </label>
-            <p className="mt-1 text-gray-900 dark:text-white">{book.description}</p>
-          </div>
+          {book.description && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Description
+              </label>
+              <p className="mt-1 text-gray-900">{book.description}</p>
+            </div>
+          )}
 
           <div className="flex space-x-4 pt-4">
             <Link

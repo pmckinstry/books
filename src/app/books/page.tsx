@@ -1,17 +1,23 @@
 import Link from "next/link";
+import { bookOperations } from "@/lib/database";
 
-// Sample book data - in a real app, this would come from an API or database
-const sampleBooks = [
-  { id: "1", title: "The Great Gatsby", author: "F. Scott Fitzgerald", year: 1925 },
-  { id: "2", title: "To Kill a Mockingbird", author: "Harper Lee", year: 1960 },
-  { id: "3", title: "1984", author: "George Orwell", year: 1949 },
-];
+// This is a Server Component that fetches data directly from the database
+async function getBooks() {
+  try {
+    return bookOperations.getAll();
+  } catch (error) {
+    console.error('Error fetching books:', error);
+    return [];
+  }
+}
 
-export default function BooksListPage() {
+export default async function BooksListPage() {
+  const books = await getBooks();
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-bold text-gray-900">
           All Books
         </h1>
         <Link 
@@ -22,63 +28,75 @@ export default function BooksListPage() {
         </Link>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Author
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Year
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {sampleBooks.map((book) => (
-                <tr key={book.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    {book.title}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                    {book.author}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                    {book.year}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <Link 
-                      href={`/books/${book.id}`}
-                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                    >
-                      View
-                    </Link>
-                    <Link 
-                      href={`/books/${book.id}/edit`}
-                      className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                    >
-                      Edit
-                    </Link>
-                    <Link 
-                      href={`/books/${book.id}/delete`}
-                      className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                    >
-                      Delete
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {books.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg mb-4">No books found</p>
+          <Link 
+            href="/books/create"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Add Your First Book
+          </Link>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Title
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Author
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Year
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {books.map((book) => (
+                  <tr key={book.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {book.title}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {book.author}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {book.year}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                      <Link 
+                        href={`/books/${book.id}`}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        View
+                      </Link>
+                      <Link 
+                        href={`/books/${book.id}/edit`}
+                        className="text-green-600 hover:text-green-900"
+                      >
+                        Edit
+                      </Link>
+                      <Link 
+                        href={`/books/${book.id}/delete`}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

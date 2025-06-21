@@ -34,3 +34,27 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+---
+
+TESTING: 
+
+# Get all books
+curl http://localhost:3000/api/books
+
+# Get a specific book
+curl http://localhost:3000/api/books/1
+
+# Create a new book
+curl -X POST http://localhost:3000/api/books \
+  -H "Content-Type: application/json" \
+  -d '{"title":"New Book","author":"Author Name","year":2024}'
+
+# Update a book
+curl -X PUT http://localhost:3000/api/books/1 \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Updated Title"}'
+
+# Delete a book
+curl -X DELETE http://localhost:3000/api/books/1
