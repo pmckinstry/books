@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bookOperations, CreateBookData } from '@/lib/database';
 
-// GET /api/books - Get all books
-export async function GET() {
+// GET /api/books - Get all books (with optional pagination)
+export async function GET(request: NextRequest) {
   try {
-    const books = bookOperations.getAll();
-    return NextResponse.json(books);
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 10;
+    
+    // Validate pagination parameters
+    if (page < 1 || limit < 1 || limit > 100) {
+      return NextResponse.json(
+        { error: 'Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100.' },
+        { status: 400 }
+      );
+    }
+    
+    const result = bookOperations.getPaginated(page, limit);
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching books:', error);
     return NextResponse.json(

@@ -211,6 +211,23 @@ export const bookOperations = {
     return stmt.all() as Book[];
   },
 
+  // Get paginated books
+  getPaginated: (page: number = 1, limit: number = 10): { books: Book[], total: number, totalPages: number } => {
+    const offset = (page - 1) * limit;
+    
+    // Get total count
+    const countStmt = db.prepare('SELECT COUNT(*) as count FROM books');
+    const total = (countStmt.get() as { count: number }).count;
+    
+    // Get paginated books
+    const stmt = db.prepare('SELECT * FROM books ORDER BY created_at DESC LIMIT ? OFFSET ?');
+    const books = stmt.all(limit, offset) as Book[];
+    
+    const totalPages = Math.ceil(total / limit);
+    
+    return { books, total, totalPages };
+  },
+
   // Get a single book by ID
   getById: (id: number): Book | null => {
     const stmt = db.prepare('SELECT * FROM books WHERE id = ?');
