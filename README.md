@@ -20,6 +20,32 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Features
+
+- **User Authentication**: Register and login with username/password
+- **Book Management**: Full CRUD operations for personal book collection
+- **SQLite Database**: Persistent data storage with better-sqlite3
+- **REST API**: Complete API endpoints for books and authentication
+- **Pagination**: Browse books with paginated results
+- **Responsive Design**: Modern UI with Tailwind CSS
+
+## Authentication
+
+The app includes user authentication with the following features:
+
+- User registration with username and password
+- Secure password hashing with bcrypt
+- Login/logout functionality
+- Protected routes requiring authentication
+- Default admin user (username: `admin`, password: `admin123`)
+
+## Database
+
+The app uses SQLite with the following tables:
+
+- **users**: User accounts with username and hashed password
+- **books**: Book collection with title, author, year, description, and user association
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
@@ -38,10 +64,30 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ---
 
-TESTING: 
+## API Testing
+
+### Authentication Endpoints
+
+# Register a new user
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"newuser","password":"password123"}'
+
+# Login
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+
+# Logout
+curl -X POST http://localhost:3000/api/auth/logout
+
+### Book Endpoints
 
 # Get all books
 curl http://localhost:3000/api/books
+
+# Get paginated books
+curl http://localhost:3000/api/books?page=1&limit=10
 
 # Get a specific book
 curl http://localhost:3000/api/books/1

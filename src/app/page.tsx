@@ -1,6 +1,37 @@
+'use client';
+
 import Link from "next/link";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getCurrentUser } from '@/lib/auth';
 
 export default function Home() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+    setIsLoading(false);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    // Redirect to login if not authenticated
+    router.push('/login');
+    return null;
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8">
       <div className="text-center space-y-8">
@@ -8,7 +39,7 @@ export default function Home() {
           Welcome to Book Manager
         </h1>
         <p className="text-xl text-gray-600 max-w-md">
-          Manage your personal book collection with our easy-to-use CRUD interface.
+          Welcome back, {user.username}! Manage your personal book collection with our easy-to-use interface.
         </p>
         
         <div className="space-y-4">

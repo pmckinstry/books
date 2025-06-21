@@ -4,10 +4,11 @@ import { bookOperations, UpdateBookData } from '@/lib/database';
 // GET /api/books/[id] - Get a single book
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     if (isNaN(id)) {
       return NextResponse.json(
         { error: 'Invalid book ID' },
@@ -36,10 +37,11 @@ export async function GET(
 // PUT /api/books/[id] - Update a book
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     if (isNaN(id)) {
       return NextResponse.json(
         { error: 'Invalid book ID' },
@@ -85,10 +87,11 @@ export async function PUT(
 // DELETE /api/books/[id] - Delete a book
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
     if (isNaN(id)) {
       return NextResponse.json(
         { error: 'Invalid book ID' },

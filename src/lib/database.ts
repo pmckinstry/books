@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import bcrypt from 'bcryptjs';
 
 // Ensure the data directory exists
 const dataDir = path.join(process.cwd(), 'data');
@@ -14,14 +15,26 @@ const db = new Database(dbPath);
 // Initialize the database with the books table
 function initializeDatabase() {
   db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec(`
     CREATE TABLE IF NOT EXISTS books (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       author TEXT NOT NULL,
       year INTEGER,
       description TEXT,
+      user_id INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
     )
   `);
 
@@ -174,10 +187,25 @@ function initializeDatabase() {
     
     popularBooks.forEach(book => insertBook.run(book));
   }
+
+  // Create default admin user if no users exist
+  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+  if (userCount.count === 0) {
+    const hashedPassword = bcrypt.hashSync('admin123', 10);
+    const insertUser = db.prepare('INSERT INTO users (username, password) VALUES (?, ?)');
+    insertUser.run('admin', hashedPassword);
+  }
 }
 
 // Initialize the database
 initializeDatabase();
+
+export interface User {
+  id: number;
+  username: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Book {
   id: number;
@@ -185,6 +213,7 @@ export interface Book {
   author: string;
   year: number;
   description?: string;
+  user_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -194,6 +223,7 @@ export interface CreateBookData {
   author: string;
   year: number;
   description?: string;
+  user_id?: number;
 }
 
 export interface UpdateBookData {
@@ -202,6 +232,83 @@ export interface UpdateBookData {
   year?: number;
   description?: string;
 }
+
+export interface CreateUserData {
+  username: string;
+  password: string;
+}
+
+export interface LoginData {
+  username: string;
+  password: string;
+}
+
+// User operations
+export const userOperations = {
+  // Create a new user
+  create: async (data: CreateUserData): Promise<User | null> => {
+    try {
+      const hashedPassword = bcrypt.hashSync(data.password, 10);
+      const stmt = db.prepare('INSERT INTO users (username, password) VALUES (?, ?)');
+      const result = stmt.run(data.username, hashedPassword);
+      
+      // Return the created user (without password)
+      const user = db.prepare('SELECT id, username, created_at, updated_at FROM users WHERE id = ?').get(result.lastInsertRowid as number) as User;
+      return user;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return null;
+    }
+  },
+
+  // Authenticate user
+  authenticate: async (data: LoginData): Promise<User | null> => {
+    try {
+      const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
+      const user = stmt.get(data.username) as any;
+      
+      if (!user) return null;
+      
+      const isValid = bcrypt.compareSync(data.password, user.password);
+      if (!isValid) return null;
+      
+      // Return user without password
+      return {
+        id: user.id,
+        username: user.username,
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      };
+    } catch (error) {
+      console.error('Error authenticating user:', error);
+      return null;
+    }
+  },
+
+  // Get user by ID
+  getById: (id: number): User | null => {
+    try {
+      const stmt = db.prepare('SELECT id, username, created_at, updated_at FROM users WHERE id = ?');
+      const user = stmt.get(id) as User | undefined;
+      return user || null;
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+  },
+
+  // Check if username exists
+  usernameExists: (username: string): boolean => {
+    try {
+      const stmt = db.prepare('SELECT COUNT(*) as count FROM users WHERE username = ?');
+      const result = stmt.get(username) as { count: number };
+      return result.count > 0;
+    } catch (error) {
+      console.error('Error checking username:', error);
+      return false;
+    }
+  }
+};
 
 // Book CRUD operations
 export const bookOperations = {
@@ -238,10 +345,10 @@ export const bookOperations = {
   // Create a new book
   create: (data: CreateBookData): Book => {
     const stmt = db.prepare(`
-      INSERT INTO books (title, author, year, description) 
-      VALUES (?, ?, ?, ?)
+      INSERT INTO books (title, author, year, description, user_id) 
+      VALUES (?, ?, ?, ?, ?)
     `);
-    const result = stmt.run(data.title, data.author, data.year, data.description);
+    const result = stmt.run(data.title, data.author, data.year, data.description, data.user_id);
     
     // Return the created book
     return bookOperations.getById(result.lastInsertRowid as number)!;
