@@ -50,8 +50,14 @@ export function isAuthenticated(): boolean {
   return getCurrentUser() !== null;
 }
 
-// Get user ID
+// Get user ID - returns null on server, actual ID on client
 export function getCurrentUserId(): number | null {
   const user = getCurrentUser();
   return user?.id || null;
+}
+
+// Client-side only function to get user ID safely
+export function getCurrentUserIdClient(): number | null {
+  if (typeof window === 'undefined') return null;
+  return getCurrentUserId();
 } 

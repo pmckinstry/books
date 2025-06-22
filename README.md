@@ -24,8 +24,11 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 - **User Authentication**: Register and login with username/password
 - **Book Management**: Full CRUD operations for personal book collection
+- **Reading Progress Tracking**: Mark books as unread, reading, or read
+- **Book Ratings**: Rate books from 1-5 stars
+- **Personal Comments**: Add notes and thoughts about books
 - **SQLite Database**: Persistent data storage with better-sqlite3
-- **REST API**: Complete API endpoints for books and authentication
+- **REST API**: Complete API endpoints for books, authentication, and user associations
 - **Pagination**: Browse books with paginated results
 - **Responsive Design**: Modern UI with Tailwind CSS
 
@@ -45,6 +48,17 @@ The app uses SQLite with the following tables:
 
 - **users**: User accounts with username and hashed password
 - **books**: Book collection with title, author, year, description, and user association
+- **user_book_associations**: User reading progress, ratings, and comments for books
+
+## User-Book Associations
+
+Users can track their reading progress with the following features:
+
+- **Reading Status**: Mark books as "Unread", "Currently Reading", or "Read"
+- **Ratings**: Rate books from 1-5 stars with visual star indicators
+- **Comments**: Add personal notes and thoughts about books
+- **Visual Indicators**: Status badges show reading progress in the book list
+- **Personal Library**: Each user has their own reading history and preferences
 
 ## Learn More
 
@@ -104,3 +118,24 @@ curl -X PUT http://localhost:3000/api/books/1 \
 
 # Delete a book
 curl -X DELETE http://localhost:3000/api/books/1
+
+### User-Book Association Endpoints
+
+# Get user's book associations (requires authentication)
+curl http://localhost:3000/api/user-books
+
+# Create or update a user-book association
+curl -X POST http://localhost:3000/api/user-books \
+  -H "Content-Type: application/json" \
+  -d '{"book_id":1,"read_status":"reading","rating":4,"comments":"Great book so far!"}'
+
+# Get user's association for a specific book
+curl http://localhost:3000/api/user-books/1
+
+# Update user's association for a specific book
+curl -X PUT http://localhost:3000/api/user-books/1 \
+  -H "Content-Type: application/json" \
+  -d '{"read_status":"read","rating":5,"comments":"Excellent book! Highly recommended."}'
+
+# Delete user's association for a specific book
+curl -X DELETE http://localhost:3000/api/user-books/1

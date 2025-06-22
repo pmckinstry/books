@@ -1,89 +1,94 @@
-import Link from "next/link";
-import { bookOperations } from "@/lib/database";
-import { notFound } from "next/navigation";
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { bookOperations, userBookAssociationOperations } from '@/lib/database';
+import UserBookAssociation from '@/components/UserBookAssociation';
 
-// This is a Server Component that fetches data directly from the database
-async function getBook(id: string) {
-  try {
-    const bookId = parseInt(id);
-    if (isNaN(bookId)) {
-      return null;
-    }
-    return bookOperations.getById(bookId);
-  } catch (error) {
-    console.error('Error fetching book:', error);
-    return null;
-  }
+interface BookDetailPageProps {
+  params: Promise<{ id: string }>;
 }
 
-export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const book = await getBook(id);
+export default async function BookDetailPage({ params }: BookDetailPageProps) {
+  const resolvedParams = await params;
+  const bookId = parseInt(resolvedParams.id);
+  
+  if (isNaN(bookId)) {
+    notFound();
+  }
 
+  const book = bookOperations.getById(bookId);
   if (!book) {
     notFound();
   }
 
+  // For now, we'll not fetch user association on the server side
+  // to avoid hydration issues. The client component will handle this.
+  const userAssociation = null;
+
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Book Details
-        </h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
         <Link 
-          href="/books"
-          className="text-gray-600 hover:text-gray-900 transition-colors"
+          href="/books" 
+          className="text-blue-600 hover:text-blue-800 mb-4 inline-block"
         >
           ← Back to Books
         </Link>
       </div>
 
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Title
-            </label>
-            <p className="mt-1 text-lg text-gray-900">{book.title}</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Author
-            </label>
-            <p className="mt-1 text-lg text-gray-900">{book.author}</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Publication Year
-            </label>
-            <p className="mt-1 text-lg text-gray-900">{book.year}</p>
-          </div>
-
-          {book.description && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <p className="mt-1 text-gray-900">{book.description}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Book Details */}
+        <div className="lg:col-span-2">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">{book.title}</h1>
+            
+            <div className="space-y-4">
+              <div>
+                <span className="font-semibold text-gray-700">Author:</span>
+                <span className="ml-2 text-gray-900">{book.author}</span>
+              </div>
+              
+              {book.year && (
+                <div>
+                  <span className="font-semibold text-gray-700">Year:</span>
+                  <span className="ml-2 text-gray-900">{book.year}</span>
+                </div>
+              )}
+              
+              {book.description && (
+                <div>
+                  <span className="font-semibold text-gray-700">Description:</span>
+                  <p className="mt-2 text-gray-900 whitespace-pre-wrap">{book.description}</p>
+                </div>
+              )}
+              
+              <div className="text-sm text-gray-500">
+                Added on {new Date(book.created_at).toLocaleDateString()}
+              </div>
             </div>
-          )}
 
-          <div className="flex space-x-4 pt-4">
-            <Link
-              href={`/books/${book.id}/edit`}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Edit Book
-            </Link>
-            <Link
-              href={`/books/${book.id}/delete`}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Delete Book
-            </Link>
+            <div className="mt-6 flex space-x-4">
+              <Link
+                href={`/books/${book.id}/edit`}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Edit Book
+              </Link>
+              <Link
+                href={`/books/${book.id}/delete`}
+                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+              >
+                Delete Book
+              </Link>
+            </div>
           </div>
+        </div>
+
+        {/* User Association */}
+        <div className="lg:col-span-1">
+          <UserBookAssociation 
+            bookId={book.id} 
+            initialAssociation={userAssociation}
+          />
         </div>
       </div>
     </div>

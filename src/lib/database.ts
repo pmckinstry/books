@@ -38,6 +38,22 @@ function initializeDatabase() {
     )
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_book_associations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      book_id INTEGER NOT NULL,
+      read_status TEXT DEFAULT 'unread' CHECK (read_status IN ('unread', 'reading', 'read')),
+      rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+      comments TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+      FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
+      UNIQUE(user_id, book_id)
+    )
+  `);
+
   // Insert sample data if the table is empty
   const count = db.prepare('SELECT COUNT(*) as count FROM books').get() as { count: number };
   if (count.count === 0) {
@@ -218,6 +234,17 @@ export interface Book {
   updated_at: string;
 }
 
+export interface UserBookAssociation {
+  id: number;
+  user_id: number;
+  book_id: number;
+  read_status: 'unread' | 'reading' | 'read';
+  rating?: number;
+  comments?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CreateBookData {
   title: string;
   author: string;
@@ -241,6 +268,20 @@ export interface CreateUserData {
 export interface LoginData {
   username: string;
   password: string;
+}
+
+export interface CreateUserBookAssociationData {
+  user_id: number;
+  book_id: number;
+  read_status?: 'unread' | 'reading' | 'read';
+  rating?: number;
+  comments?: string;
+}
+
+export interface UpdateUserBookAssociationData {
+  read_status?: 'unread' | 'reading' | 'read';
+  rating?: number;
+  comments?: string;
 }
 
 // User operations
@@ -306,6 +347,161 @@ export const userOperations = {
     } catch (error) {
       console.error('Error checking username:', error);
       return false;
+    }
+  }
+};
+
+// User-Book Association operations
+export const userBookAssociationOperations = {
+  // Create or update a user-book association
+  upsert: (data: CreateUserBookAssociationData): UserBookAssociation => {
+    const stmt = db.prepare(`
+      INSERT INTO user_book_associations (user_id, book_id, read_status, rating, comments)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, book_id) DO UPDATE SET
+        read_status = COALESCE(?, read_status),
+        rating = COALESCE(?, rating),
+        comments = COALESCE(?, comments),
+        updated_at = CURRENT_TIMESTAMP
+    `);
+    
+    const result = stmt.run(
+      data.user_id, 
+      data.book_id, 
+      data.read_status || 'unread',
+      data.rating || null,
+      data.comments || null,
+      data.read_status || null,
+      data.rating || null,
+      data.comments || null
+    );
+    
+    // Return the created/updated association
+    return userBookAssociationOperations.getByUserAndBook(data.user_id, data.book_id)!;
+  },
+
+  // Get association by user and book
+  getByUserAndBook: (userId: number, bookId: number): UserBookAssociation | null => {
+    try {
+      const stmt = db.prepare('SELECT * FROM user_book_associations WHERE user_id = ? AND book_id = ?');
+      const association = stmt.get(userId, bookId) as UserBookAssociation | undefined;
+      return association || null;
+    } catch (error) {
+      console.error('Error getting user-book association:', error);
+      return null;
+    }
+  },
+
+  // Get all associations for a user
+  getByUser: (userId: number): UserBookAssociation[] => {
+    try {
+      const stmt = db.prepare('SELECT * FROM user_book_associations WHERE user_id = ? ORDER BY updated_at DESC');
+      return stmt.all(userId) as UserBookAssociation[];
+    } catch (error) {
+      console.error('Error getting user associations:', error);
+      return [];
+    }
+  },
+
+  // Update an existing association
+  update: (userId: number, bookId: number, data: UpdateUserBookAssociationData): UserBookAssociation | null => {
+    try {
+      const updates: string[] = [];
+      const values: any[] = [];
+
+      if (data.read_status !== undefined) {
+        updates.push('read_status = ?');
+        values.push(data.read_status);
+      }
+      if (data.rating !== undefined) {
+        updates.push('rating = ?');
+        values.push(data.rating);
+      }
+      if (data.comments !== undefined) {
+        updates.push('comments = ?');
+        values.push(data.comments);
+      }
+
+      if (updates.length === 0) {
+        return userBookAssociationOperations.getByUserAndBook(userId, bookId);
+      }
+
+      updates.push('updated_at = CURRENT_TIMESTAMP');
+      values.push(userId, bookId);
+
+      const stmt = db.prepare(`
+        UPDATE user_book_associations 
+        SET ${updates.join(', ')} 
+        WHERE user_id = ? AND book_id = ?
+      `);
+      stmt.run(...values);
+
+      return userBookAssociationOperations.getByUserAndBook(userId, bookId);
+    } catch (error) {
+      console.error('Error updating user-book association:', error);
+      return null;
+    }
+  },
+
+  // Delete an association
+  delete: (userId: number, bookId: number): boolean => {
+    try {
+      const stmt = db.prepare('DELETE FROM user_book_associations WHERE user_id = ? AND book_id = ?');
+      const result = stmt.run(userId, bookId);
+      return result.changes > 0;
+    } catch (error) {
+      console.error('Error deleting user-book association:', error);
+      return false;
+    }
+  },
+
+  // Get books with user associations (for display)
+  getBooksWithUserAssociations: (userId: number, page: number = 1, limit: number = 10): { books: (Book & { user_association?: UserBookAssociation })[], total: number, totalPages: number } => {
+    try {
+      const offset = (page - 1) * limit;
+      
+      // Get total count
+      const countStmt = db.prepare('SELECT COUNT(*) as count FROM books');
+      const total = (countStmt.get() as { count: number }).count;
+      
+      // Get paginated books with user associations
+      const stmt = db.prepare(`
+        SELECT b.*, uba.*
+        FROM books b
+        LEFT JOIN user_book_associations uba ON b.id = uba.book_id AND uba.user_id = ?
+        ORDER BY b.created_at DESC
+        LIMIT ? OFFSET ?
+      `);
+      
+      const results = stmt.all(userId, limit, offset) as any[];
+      
+      const books = results.map(row => ({
+        id: row.id,
+        title: row.title,
+        author: row.author,
+        year: row.year,
+        description: row.description,
+        user_id: row.user_id,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        user_association: row.user_association_id ? {
+          id: row.user_association_id,
+          user_id: row.uba_user_id,
+          book_id: row.uba_book_id,
+          read_status: row.read_status,
+          rating: row.rating,
+          comments: row.comments,
+          created_at: row.uba_created_at,
+          updated_at: row.uba_updated_at
+        } : undefined
+      }));
+      
+      const totalPages = Math.ceil(total / limit);
+      
+      return { books, total, totalPages };
+    } catch (error) {
+      console.error('Error getting books with user associations:', error);
+      return { books: [], total: 0, totalPages: 0 };
     }
   }
 };
