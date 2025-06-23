@@ -3,12 +3,13 @@ import { bookOperations } from "@/lib/database";
 import Pagination from "@/components/Pagination";
 import AuthGuard from "@/components/AuthGuard";
 import BookTable from "@/components/BookTable";
+import BookSearch from "@/components/BookSearch";
 
 // This is a Server Component that fetches data directly from the database
-async function getBooks(page: number = 1) {
+async function getBooks(page: number = 1, sortBy: string = 'created_at', sortOrder: 'asc' | 'desc' = 'desc', search?: string) {
   try {
     const limit = 10; // Books per page
-    return bookOperations.getPaginated(page, limit);
+    return bookOperations.getPaginated(page, limit, sortBy, sortOrder, search);
   } catch (error) {
     console.error('Error fetching books:', error);
     return { books: [], total: 0, totalPages: 0 };
@@ -49,11 +50,15 @@ function BooksListContent({
 export default async function BooksListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; sortBy?: string; sortOrder?: string; search?: string }>;
 }) {
   const params = await searchParams;
   const currentPage = params.page ? parseInt(params.page) : 1;
-  const { books, total, totalPages } = await getBooks(currentPage);
+  const currentSortBy = params.sortBy || 'created_at';
+  const currentSortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
+  const currentSearch = params.search || '';
+  
+  const { books, total, totalPages } = await getBooks(currentPage, currentSortBy, currentSortOrder, currentSearch);
 
   return (
     <AuthGuard>
@@ -65,6 +70,11 @@ export default async function BooksListPage({
             </h1>
             <p className="text-gray-600 mt-2">
               Showing {books.length} of {total} books
+              {currentSearch && (
+                <span className="ml-2 text-blue-600">
+                  (filtered by search)
+                </span>
+              )}
             </p>
           </div>
           <Link 
@@ -75,15 +85,28 @@ export default async function BooksListPage({
           </Link>
         </div>
 
+        <BookSearch />
+
         {books.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg mb-4">No books found</p>
-            <Link 
-              href="/books/create"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Add Your First Book
-            </Link>
+            <p className="text-gray-500 text-lg mb-4">
+              {currentSearch ? `No books found matching "${currentSearch}"` : 'No books found'}
+            </p>
+            {currentSearch ? (
+              <button
+                onClick={() => window.location.href = '/books'}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Clear Search
+              </button>
+            ) : (
+              <Link 
+                href="/books/create"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Add Your First Book
+              </Link>
+            )}
           </div>
         ) : (
           <>
@@ -93,6 +116,11 @@ export default async function BooksListPage({
               currentPage={currentPage}
               totalPages={totalPages}
               baseUrl="/books"
+              searchParams={{ 
+                sortBy: currentSortBy, 
+                sortOrder: currentSortOrder,
+                ...(currentSearch && { search: currentSearch })
+              }}
             />
           </>
         )}

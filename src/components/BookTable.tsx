@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BookWithGenres } from "@/lib/database";
 
 interface BookTableProps {
@@ -8,8 +9,57 @@ interface BookTableProps {
 }
 
 export default function BookTable({ books }: BookTableProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const handleRowClick = (bookId: number) => {
     window.location.href = `/books/${bookId}`;
+  };
+
+  const handleSort = (field: string) => {
+    const params = new URLSearchParams(searchParams);
+    const currentSortBy = params.get('sortBy') || 'created_at';
+    const currentSortOrder = params.get('sortOrder') || 'desc';
+    
+    let newSortOrder: 'asc' | 'desc' = 'asc';
+    
+    // If clicking the same field, toggle the order
+    if (currentSortBy === field) {
+      newSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+    }
+    
+    params.set('sortBy', field);
+    params.set('sortOrder', newSortOrder);
+    params.set('page', '1'); // Reset to first page when sorting changes
+    
+    router.push(`/books?${params.toString()}`);
+  };
+
+  const getSortIcon = (field: string) => {
+    const currentSortBy = searchParams.get('sortBy') || 'created_at';
+    const currentSortOrder = searchParams.get('sortOrder') || 'desc';
+    
+    if (currentSortBy !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    
+    if (currentSortOrder === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
+    }
   };
 
   return (
@@ -18,14 +68,32 @@ export default function BookTable({ books }: BookTableProps) {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Title
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('title')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Title</span>
+                  {getSortIcon('title')}
+                </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Author
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('author')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Author</span>
+                  {getSortIcon('author')}
+                </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Year
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('year')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Year</span>
+                  {getSortIcon('year')}
+                </div>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Genres

@@ -573,16 +573,51 @@ export const bookOperations = {
   },
 
   // Get paginated books
-  getPaginated: (page: number = 1, limit: number = 10): { books: BookWithGenres[], total: number, totalPages: number } => {
+  getPaginated: (page: number = 1, limit: number = 10, sortBy: string = 'created_at', sortOrder: 'asc' | 'desc' = 'desc', search?: string): { books: BookWithGenres[], total: number, totalPages: number } => {
     const offset = (page - 1) * limit;
     
-    // Get total count
-    const countStmt = db.prepare('SELECT COUNT(*) as count FROM books');
-    const total = (countStmt.get() as { count: number }).count;
+    // Validate sortBy parameter
+    const validSortFields = ['title', 'author', 'year', 'created_at'];
+    const validSortOrders = ['asc', 'desc'];
     
-    // Get paginated books
-    const stmt = db.prepare('SELECT * FROM books ORDER BY created_at DESC LIMIT ? OFFSET ?');
-    const books = stmt.all(limit, offset) as Book[];
+    if (!validSortFields.includes(sortBy)) {
+      sortBy = 'created_at';
+    }
+    if (!validSortOrders.includes(sortOrder)) {
+      sortOrder = 'desc';
+    }
+    
+    let whereClause = '';
+    let searchParams: any[] = [];
+    
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim()}%`;
+      whereClause = `
+        WHERE b.title LIKE ? 
+        OR b.author LIKE ? 
+        OR b.year LIKE ? 
+        OR b.description LIKE ?
+        OR EXISTS (
+          SELECT 1 FROM book_genres bg 
+          JOIN genres g ON bg.genre_id = g.id 
+          WHERE bg.book_id = b.id AND g.name LIKE ?
+        )
+      `;
+      searchParams = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
+    }
+    
+    // Get total count with search
+    const countStmt = db.prepare(`SELECT COUNT(*) as count FROM books b ${whereClause}`);
+    const total = (countStmt.get(...searchParams) as { count: number }).count;
+    
+    // Get paginated books with search and sorting
+    const stmt = db.prepare(`
+      SELECT DISTINCT b.* FROM books b 
+      ${whereClause}
+      ORDER BY b.${sortBy} ${sortOrder.toUpperCase()} 
+      LIMIT ? OFFSET ?
+    `);
+    const books = stmt.all(...searchParams, limit, offset) as Book[];
     
     const totalPages = Math.ceil(total / limit);
     

@@ -6,10 +6,17 @@ interface PaginationProps {
   currentPage: number;
   totalPages: number;
   baseUrl: string;
+  searchParams?: Record<string, string>;
 }
 
-export default function Pagination({ currentPage, totalPages, baseUrl }: PaginationProps) {
+export default function Pagination({ currentPage, totalPages, baseUrl, searchParams = {} }: PaginationProps) {
   if (totalPages <= 1) return null;
+
+  const buildUrl = (page: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', page.toString());
+    return `${baseUrl}?${params.toString()}`;
+  };
 
   const generatePageNumbers = () => {
     const pages = [];
@@ -47,7 +54,7 @@ export default function Pagination({ currentPage, totalPages, baseUrl }: Paginat
       <div className="flex justify-between flex-1 sm:hidden">
         {/* Mobile pagination */}
         <Link
-          href={`${baseUrl}?page=${currentPage - 1}`}
+          href={buildUrl(currentPage - 1)}
           className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
             currentPage === 1
               ? 'text-gray-400 cursor-not-allowed'
@@ -58,7 +65,7 @@ export default function Pagination({ currentPage, totalPages, baseUrl }: Paginat
           Previous
         </Link>
         <Link
-          href={`${baseUrl}?page=${currentPage + 1}`}
+          href={buildUrl(currentPage + 1)}
           className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
             currentPage === totalPages
               ? 'text-gray-400 cursor-not-allowed'
@@ -82,7 +89,7 @@ export default function Pagination({ currentPage, totalPages, baseUrl }: Paginat
           <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
             {/* Previous button */}
             <Link
-              href={`${baseUrl}?page=${currentPage - 1}`}
+              href={buildUrl(currentPage - 1)}
               className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-sm font-medium ${
                 currentPage === 1
                   ? 'text-gray-300 cursor-not-allowed'
@@ -100,7 +107,7 @@ export default function Pagination({ currentPage, totalPages, baseUrl }: Paginat
             {pageNumbers.map((page) => (
               <Link
                 key={page}
-                href={`${baseUrl}?page=${page}`}
+                href={buildUrl(page)}
                 className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                   page === currentPage
                     ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
@@ -113,7 +120,7 @@ export default function Pagination({ currentPage, totalPages, baseUrl }: Paginat
             
             {/* Next button */}
             <Link
-              href={`${baseUrl}?page=${currentPage + 1}`}
+              href={buildUrl(currentPage + 1)}
               className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-sm font-medium ${
                 currentPage === totalPages
                   ? 'text-gray-300 cursor-not-allowed'
