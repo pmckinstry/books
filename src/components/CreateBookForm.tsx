@@ -1,9 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+
+interface Genre {
+  id: number;
+  name: string;
+}
 
 export default function CreateBookForm() {
   const router = useRouter();
@@ -13,8 +18,17 @@ export default function CreateBookForm() {
     year: '',
     description: ''
   });
+  const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
+  const [genres, setGenres] = useState<Genre[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Fetch genres from the backend
+    fetch('/api/genres')
+      .then(res => res.json())
+      .then(data => setGenres(data.genres || []));
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -23,6 +37,11 @@ export default function CreateBookForm() {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const options = Array.from(e.target.selectedOptions);
+    setSelectedGenres(options.map(opt => parseInt(opt.value)));
   };
 
   const validateForm = () => {
@@ -45,6 +64,10 @@ export default function CreateBookForm() {
       }
     }
 
+    if (selectedGenres.length === 0) {
+      newErrors.genres = 'Please select at least one genre';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -63,7 +86,8 @@ export default function CreateBookForm() {
         title: formData.title.trim(),
         author: formData.author.trim(),
         year: parseInt(formData.year),
-        description: formData.description.trim() || undefined
+        description: formData.description.trim() || undefined,
+        genres: selectedGenres
       });
 
       router.push('/books');
@@ -167,6 +191,32 @@ export default function CreateBookForm() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter book description (optional)"
             />
+          </div>
+
+          <div>
+            <label htmlFor="genres" className="block text-sm font-medium text-gray-700 mb-2">
+              Genres *
+            </label>
+            <select
+              id="genres"
+              name="genres"
+              multiple
+              value={selectedGenres.map(String)}
+              onChange={handleGenreChange}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                errors.genres ? 'border-red-500' : 'border-gray-300'
+              }`}
+              size={Math.min(6, genres.length)}
+            >
+              {genres.map((genre) => (
+                <option key={genre.id} value={genre.id}>
+                  {genre.name}
+                </option>
+              ))}
+            </select>
+            {errors.genres && (
+              <p className="mt-1 text-sm text-red-600">{errors.genres}</p>
+            )}
           </div>
 
           {errors.submit && (

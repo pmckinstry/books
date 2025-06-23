@@ -67,10 +67,10 @@ export default function Navigation() {
                 All Books
               </Link>
               <Link 
-                href="/books/create" 
-                className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded transition-colors"
+                href="/genres" 
+                className="hover:text-gray-300 transition-colors"
               >
-                Add Book
+                Genres
               </Link>
               <span className="text-gray-300">
                 Welcome, {user.username}!

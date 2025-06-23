@@ -53,6 +53,22 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                   <span className="ml-2 text-gray-900">{book.year}</span>
                 </div>
               )}
+
+              {book.genres && book.genres.length > 0 && (
+                <div>
+                  <span className="font-semibold text-gray-700">Genres:</span>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {book.genres.map((genre) => (
+                      <span
+                        key={genre.id}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                      >
+                        {genre.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {book.description && (
                 <div>
