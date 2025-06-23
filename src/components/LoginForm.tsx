@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { setCurrentUser } from '@/lib/auth';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -57,11 +58,11 @@ export default function LoginForm() {
 
       if (response.ok) {
         const data = await response.json();
-        // Store user info in localStorage
-        localStorage.setItem('user', JSON.stringify(data.user));
+        // Store user info using the proper auth function
+        setCurrentUser(data.user);
         
-        // Force a full page reload to refresh navigation
-        window.location.href = '/books';
+        // Use router.push instead of window.location.href for better state management
+        router.push('/books');
       } else {
         const error = await response.json();
         setErrors({ submit: error.error || 'Login failed' });

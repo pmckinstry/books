@@ -4,7 +4,7 @@ import { userOperations } from '@/lib/database';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, password } = body;
+    const { username, password, nickname } = body;
 
     if (!username || !password) {
       return NextResponse.json(
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await userOperations.create({ username, password });
+    const user = await userOperations.create({ username, password, nickname });
 
     if (!user) {
       return NextResponse.json(

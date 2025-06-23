@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { setCurrentUser } from '@/lib/auth';
 
 export default function RegisterForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     username: '',
+    nickname: '',
     password: '',
     confirmPassword: ''
   });
@@ -30,6 +32,12 @@ export default function RegisterForm() {
       newErrors.username = 'Username is required';
     } else if (formData.username.length < 3) {
       newErrors.username = 'Username must be at least 3 characters';
+    }
+
+    if (!formData.nickname.trim()) {
+      newErrors.nickname = 'Nickname is required';
+    } else if (formData.nickname.length < 2) {
+      newErrors.nickname = 'Nickname must be at least 2 characters';
     }
 
     if (!formData.password.trim()) {
@@ -65,17 +73,18 @@ export default function RegisterForm() {
         },
         body: JSON.stringify({
           username: formData.username,
+          nickname: formData.nickname,
           password: formData.password
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        // Store user info in localStorage
-        localStorage.setItem('user', JSON.stringify(data.user));
+        // Store user info using the proper auth function
+        setCurrentUser(data.user);
         
-        // Force a full page reload to refresh navigation
-        window.location.href = '/books';
+        // Use router.push instead of window.location.href for better state management
+        router.push('/books');
       } else {
         const error = await response.json();
         setErrors({ submit: error.error || 'Registration failed' });
@@ -126,6 +135,26 @@ export default function RegisterForm() {
               />
               {errors.username && (
                 <p className="mt-1 text-sm text-red-600">{errors.username}</p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="nickname" className="sr-only">
+                Nickname
+              </label>
+              <input
+                id="nickname"
+                name="nickname"
+                type="text"
+                required
+                value={formData.nickname}
+                onChange={handleChange}
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
+                  errors.nickname ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Nickname"
+              />
+              {errors.nickname && (
+                <p className="mt-1 text-sm text-red-600">{errors.nickname}</p>
               )}
             </div>
             <div>

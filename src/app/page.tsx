@@ -9,12 +9,24 @@ export default function Home() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
     setUser(currentUser);
+    
+    if (!currentUser) {
+      setShouldRedirect(true);
+    }
+    
     setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.push('/login');
+    }
+  }, [shouldRedirect, router]);
 
   if (isLoading) {
     return (
@@ -26,10 +38,14 @@ export default function Home() {
     );
   }
 
-  if (!user) {
-    // Redirect to login if not authenticated
-    router.push('/login');
-    return null;
+  if (shouldRedirect) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

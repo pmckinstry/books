@@ -21,8 +21,39 @@ export default function UserBookAssociation({ bookId, initialAssociation }: User
 
   // Get user ID on client side only to avoid hydration mismatch
   useEffect(() => {
-    const currentUserId = getCurrentUserId();
-    setUserId(currentUserId);
+    const getUserId = () => {
+      const currentUserId = getCurrentUserId();
+      console.log('UserBookAssociation: getCurrentUserId returned:', currentUserId);
+      setUserId(currentUserId);
+    };
+
+    // Try immediately
+    getUserId();
+    
+    // Try multiple times with increasing delays to ensure localStorage is available
+    const timers = [
+      setTimeout(getUserId, 100),
+      setTimeout(getUserId, 500),
+      setTimeout(getUserId, 1000),
+      setTimeout(getUserId, 2000)
+    ];
+    
+    // Listen for auth state changes
+    const handleAuthStateChange = (e: CustomEvent) => {
+      console.log('UserBookAssociation: auth state changed:', e.detail);
+      if (e.detail.user) {
+        setUserId(e.detail.user.id);
+      } else {
+        setUserId(null);
+      }
+    };
+
+    window.addEventListener('authStateChanged', handleAuthStateChange as EventListener);
+    
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+      window.removeEventListener('authStateChanged', handleAuthStateChange as EventListener);
+    };
   }, []);
 
   // Fetch initial association on client side

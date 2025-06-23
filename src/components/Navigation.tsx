@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { getCurrentUser, removeCurrentUser } from '@/lib/auth';
+import { getCurrentUser, removeCurrentUser, clearStaleUserData, forceClearAllAuthData, debugAuthState } from '@/lib/auth';
 
 export default function Navigation() {
   const router = useRouter();
@@ -11,9 +11,82 @@ export default function Navigation() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
-    setIsLoading(false);
+    const checkAuthStatus = () => {
+      try {
+        // First clear any stale data
+        clearStaleUserData();
+        
+        const currentUser = getCurrentUser();
+        console.log('Navigation: Current user from localStorage:', currentUser);
+        
+        // Validate that the user object has required fields
+        if (currentUser && currentUser.id && currentUser.username) {
+          setUser(currentUser);
+          console.log('Navigation: User is valid, setting user state');
+        } else {
+          // Clear invalid/stale data
+          removeCurrentUser();
+          setUser(null);
+          console.log('Navigation: User is invalid, cleared data');
+        }
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        // On error, clear any stale data
+        removeCurrentUser();
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
+
+  // Listen for storage changes (when user logs in/out from other tabs or components)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user') {
+        // Re-check auth status when localStorage changes
+        const currentUser = getCurrentUser();
+        setUser(currentUser);
+      }
+    };
+
+    // Listen for custom auth state change events
+    const handleAuthStateChange = (e: CustomEvent) => {
+      setUser(e.detail.user);
+    };
+
+    // Listen for storage events from other tabs
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Listen for custom auth state change events
+    window.addEventListener('authStateChanged', handleAuthStateChange as EventListener);
+    
+    // Also check on page visibility change and focus
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const currentUser = getCurrentUser();
+        setUser(currentUser);
+      }
+    };
+    
+    const handleFocus = () => {
+      const currentUser = getCurrentUser();
+      setUser(currentUser);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('load', handleFocus);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('authStateChanged', handleAuthStateChange as EventListener);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('load', handleFocus);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -25,7 +98,27 @@ export default function Navigation() {
       window.location.href = '/login';
     } catch (error) {
       console.error('Error logging out:', error);
+      // Even if logout fails, clear local data
+      removeCurrentUser();
+      setUser(null);
+      window.location.href = '/login';
     }
+  };
+
+  const handleRefreshAuth = () => {
+    clearStaleUserData();
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+  };
+
+  const handleForceClearAuth = () => {
+    forceClearAllAuthData();
+    setUser(null);
+    window.location.reload();
+  };
+
+  const handleDebugAuth = () => {
+    debugAuthState();
   };
 
   if (isLoading) {
@@ -67,14 +160,44 @@ export default function Navigation() {
                 All Books
               </Link>
               <Link 
+                href="/read" 
+                className="hover:text-gray-300 transition-colors"
+              >
+                Read Books
+              </Link>
+              <Link 
                 href="/genres" 
                 className="hover:text-gray-300 transition-colors"
               >
                 Genres
               </Link>
-              <span className="text-gray-300">
-                Welcome, {user.username}!
-              </span>
+              <Link 
+                href="/profile" 
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Welcome, {user.nickname || user.username}!
+              </Link>
+              <button
+                onClick={handleRefreshAuth}
+                className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded"
+                title="Refresh auth status"
+              >
+                ↻
+              </button>
+              <button
+                onClick={handleForceClearAuth}
+                className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded"
+                title="Force clear all auth data"
+              >
+                🗑️
+              </button>
+              <button
+                onClick={handleDebugAuth}
+                className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded"
+                title="Debug auth state"
+              >
+                🔍
+              </button>
               <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded transition-colors"

@@ -19,6 +19,7 @@ function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
+      nickname TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -256,6 +257,7 @@ initializeDatabase();
 export interface User {
   id: number;
   username: string;
+  nickname?: string;
   created_at: string;
   updated_at: string;
 }
@@ -300,6 +302,7 @@ export interface UpdateBookData {
 export interface CreateUserData {
   username: string;
   password: string;
+  nickname?: string;
 }
 
 export interface LoginData {
@@ -347,11 +350,11 @@ export const userOperations = {
   create: async (data: CreateUserData): Promise<User | null> => {
     try {
       const hashedPassword = bcrypt.hashSync(data.password, 10);
-      const stmt = db.prepare('INSERT INTO users (username, password) VALUES (?, ?)');
-      const result = stmt.run(data.username, hashedPassword);
+      const stmt = db.prepare('INSERT INTO users (username, password, nickname) VALUES (?, ?, ?)');
+      const result = stmt.run(data.username, hashedPassword, data.nickname || data.username);
       
       // Return the created user (without password)
-      const user = db.prepare('SELECT id, username, created_at, updated_at FROM users WHERE id = ?').get(result.lastInsertRowid as number) as User;
+      const user = db.prepare('SELECT id, username, nickname, created_at, updated_at FROM users WHERE id = ?').get(result.lastInsertRowid as number) as User;
       return user;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -374,6 +377,7 @@ export const userOperations = {
       return {
         id: user.id,
         username: user.username,
+        nickname: user.nickname,
         created_at: user.created_at,
         updated_at: user.updated_at
       };
@@ -386,7 +390,7 @@ export const userOperations = {
   // Get user by ID
   getById: (id: number): User | null => {
     try {
-      const stmt = db.prepare('SELECT id, username, created_at, updated_at FROM users WHERE id = ?');
+      const stmt = db.prepare('SELECT id, username, nickname, created_at, updated_at FROM users WHERE id = ?');
       const user = stmt.get(id) as User | undefined;
       return user || null;
     } catch (error) {
@@ -404,6 +408,38 @@ export const userOperations = {
     } catch (error) {
       console.error('Error checking username:', error);
       return false;
+    }
+  },
+
+  // Update user profile
+  updateProfile: async (userId: number, data: { nickname?: string }): Promise<User | null> => {
+    try {
+      const updates: string[] = [];
+      const values: any[] = [];
+
+      if (data.nickname !== undefined) {
+        updates.push('nickname = ?');
+        values.push(data.nickname);
+      }
+
+      if (updates.length === 0) {
+        return userOperations.getById(userId);
+      }
+
+      updates.push('updated_at = CURRENT_TIMESTAMP');
+      values.push(userId);
+
+      const stmt = db.prepare(`
+        UPDATE users 
+        SET ${updates.join(', ')} 
+        WHERE id = ?
+      `);
+      stmt.run(...values);
+
+      return userOperations.getById(userId);
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      return null;
     }
   }
 };
@@ -560,6 +596,97 @@ export const userBookAssociationOperations = {
       console.error('Error getting books with user associations:', error);
       return { books: [], total: 0, totalPages: 0 };
     }
+  },
+
+  // Get read books with pagination, search, and sorting
+  getReadBooksWithPagination: (userId: number, page: number = 1, limit: number = 10, sortBy: string = 'title', sortOrder: 'asc' | 'desc' = 'asc', search?: string): { books: (BookWithGenres & { user_association?: UserBookAssociation })[], total: number, totalPages: number } => {
+    try {
+      const offset = (page - 1) * limit;
+      
+      // Validate sortBy parameter
+      const validSortFields = ['title', 'author', 'year', 'updated_at'];
+      const validSortOrders = ['asc', 'desc'];
+      
+      if (!validSortFields.includes(sortBy)) {
+        sortBy = 'title';
+      }
+      if (!validSortOrders.includes(sortOrder)) {
+        sortOrder = 'asc';
+      }
+      
+      let whereClause = 'WHERE uba.user_id = ? AND uba.read_status = \'read\'';
+      let searchParams: any[] = [userId];
+      
+      if (search && search.trim()) {
+        const searchTerm = `%${search.trim()}%`;
+        whereClause += `
+          AND (b.title LIKE ? 
+          OR b.author LIKE ? 
+          OR b.year LIKE ? 
+          OR b.description LIKE ?
+          OR EXISTS (
+            SELECT 1 FROM book_genres bg 
+            JOIN genres g ON bg.genre_id = g.id 
+            WHERE bg.book_id = b.id AND g.name LIKE ?
+          ))
+        `;
+        searchParams.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+      }
+      
+      // Get total count with search
+      const countStmt = db.prepare(`
+        SELECT COUNT(DISTINCT b.id) as count 
+        FROM books b
+        INNER JOIN user_book_associations uba ON b.id = uba.book_id
+        ${whereClause}
+      `);
+      const total = (countStmt.get(...searchParams) as { count: number }).count;
+      
+      // Get paginated read books with search and sorting
+      const stmt = db.prepare(`
+        SELECT DISTINCT 
+          b.id, b.title, b.author, b.year, b.description, b.user_id, b.created_at, b.updated_at,
+          uba.id as uba_id, uba.user_id as uba_user_id, uba.book_id as uba_book_id, 
+          uba.read_status as uba_read_status, uba.rating as uba_rating, 
+          uba.comments as uba_comments, uba.created_at as uba_created_at, uba.updated_at as uba_updated_at
+        FROM books b
+        INNER JOIN user_book_associations uba ON b.id = uba.book_id
+        ${whereClause}
+        ORDER BY b.${sortBy} ${sortOrder.toUpperCase()} 
+        LIMIT ? OFFSET ?
+      `);
+      
+      const results = stmt.all(...searchParams, limit, offset) as any[];
+      
+      const books = results.map(row => ({
+        id: row.id,
+        title: row.title,
+        author: row.author,
+        year: row.year,
+        description: row.description,
+        user_id: row.user_id,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        genres: getGenresForBook(row.id),
+        user_association: {
+          id: row.uba_id,
+          user_id: row.uba_user_id,
+          book_id: row.uba_book_id,
+          read_status: row.uba_read_status,
+          rating: row.uba_rating,
+          comments: row.uba_comments,
+          created_at: row.uba_created_at,
+          updated_at: row.uba_updated_at
+        }
+      }));
+      
+      const totalPages = Math.ceil(total / limit);
+      
+      return { books, total, totalPages };
+    } catch (error) {
+      console.error('Error getting read books with pagination:', error);
+      return { books: [], total: 0, totalPages: 0 };
+    }
   }
 };
 
@@ -693,17 +820,13 @@ export const bookOperations = {
 };
 
 export function getBooksForGenre(genreId: number) {
-  const dbPath = path.join(process.cwd(), 'data', 'books.db');
-  const db = new Database(dbPath);
-  const books = db.prepare(`
-    SELECT b.id, b.title, b.author, b.year, b.description
-    FROM books b
+  const stmt = db.prepare(`
+    SELECT b.* FROM books b
     INNER JOIN book_genres bg ON b.id = bg.book_id
     WHERE bg.genre_id = ?
     ORDER BY b.title
-  `).all(genreId);
-  db.close();
-  return books;
+  `);
+  return stmt.all(genreId) as Book[];
 }
-
-export default db; 
+// Initialize the database
+initializeDatabase();

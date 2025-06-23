@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { bookOperations, userBookAssociationOperations } from '@/lib/database';
 import UserBookAssociation from '@/components/UserBookAssociation';
+import AuthDebugger from '@/components/AuthDebugger';
 
 interface BookDetailPageProps {
   params: Promise<{ id: string }>;
@@ -33,6 +34,11 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         >
           ← Back to Books
         </Link>
+      </div>
+
+      {/* Debug component */}
+      <div className="mb-4">
+        <AuthDebugger />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
