@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import GenreSearch from './GenreSearch';
 
 interface Genre {
   id: number;
@@ -13,6 +15,8 @@ export default function GenreList() {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     fetchGenres();
@@ -31,6 +35,89 @@ export default function GenreList() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSort = (field: string) => {
+    const params = new URLSearchParams(searchParams);
+    const currentSortBy = params.get('sortBy') || 'name';
+    const currentSortOrder = params.get('sortOrder') || 'asc';
+    
+    let newSortOrder: 'asc' | 'desc' = 'asc';
+    
+    // If clicking the same field, toggle the order
+    if (currentSortBy === field) {
+      newSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+    }
+    
+    params.set('sortBy', field);
+    params.set('sortOrder', newSortOrder);
+    
+    router.push(`/genres?${params.toString()}`);
+  };
+
+  const getSortIcon = (field: string) => {
+    const currentSortBy = searchParams.get('sortBy') || 'name';
+    const currentSortOrder = searchParams.get('sortOrder') || 'asc';
+    
+    if (currentSortBy !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    
+    if (currentSortOrder === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
+    }
+  };
+
+  const filterGenres = (genres: Genre[]) => {
+    const searchTerm = searchParams.get('search') || '';
+    
+    if (!searchTerm.trim()) {
+      return genres;
+    }
+    
+    const term = searchTerm.toLowerCase().trim();
+    return genres.filter(genre => 
+      genre.name.toLowerCase().includes(term) ||
+      (genre.description && genre.description.toLowerCase().includes(term))
+    );
+  };
+
+  const sortGenres = (genres: Genre[]) => {
+    const currentSortBy = searchParams.get('sortBy') || 'name';
+    const currentSortOrder = searchParams.get('sortOrder') || 'asc';
+    
+    return [...genres].sort((a, b) => {
+      let aValue = a[currentSortBy as keyof Genre];
+      let bValue = b[currentSortBy as keyof Genre];
+      
+      // Handle undefined values
+      if (aValue === undefined) aValue = '';
+      if (bValue === undefined) bValue = '';
+      
+      // Convert to string for comparison
+      const aStr = String(aValue).toLowerCase();
+      const bStr = String(bValue).toLowerCase();
+      
+      if (currentSortOrder === 'asc') {
+        return aStr.localeCompare(bStr);
+      } else {
+        return bStr.localeCompare(aStr);
+      }
+    });
   };
 
   if (isLoading) {
@@ -58,6 +145,10 @@ export default function GenreList() {
     );
   }
 
+  const filteredGenres = filterGenres(genres);
+  const sortedGenres = sortGenres(filteredGenres);
+  const searchTerm = searchParams.get('search') || '';
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -70,6 +161,8 @@ export default function GenreList() {
         </Link>
       </div>
 
+      <GenreSearch />
+
       {genres.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg mb-4">No genres found</p>
@@ -80,10 +173,33 @@ export default function GenreList() {
             Create your first genre
           </Link>
         </div>
+      ) : sortedGenres.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg mb-4">
+            {searchTerm ? `No genres found matching "${searchTerm}"` : 'No genres found'}
+          </p>
+          {searchTerm && (
+            <button
+              onClick={() => router.push('/genres')}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md transition-colors"
+            >
+              Clear Search
+            </button>
+          )}
+        </div>
       ) : (
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
+          <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+            <div 
+              className="flex items-center space-x-1 cursor-pointer hover:bg-gray-100 transition-colors px-2 py-1 rounded"
+              onClick={() => handleSort('name')}
+            >
+              <span className="text-sm font-medium text-gray-700 uppercase tracking-wider">Genre Name</span>
+              {getSortIcon('name')}
+            </div>
+          </div>
           <ul className="divide-y divide-gray-200">
-            {genres.map((genre) => (
+            {sortedGenres.map((genre) => (
               <li key={genre.id} className="px-6 py-6 hover:bg-gray-50">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
@@ -133,7 +249,14 @@ export default function GenreList() {
       )}
 
       <div className="mt-6 text-sm text-gray-500">
-        Total genres: {genres.length}
+        {searchTerm ? (
+          <>
+            Showing {sortedGenres.length} of {genres.length} genres
+            <span className="ml-2 text-purple-600">(filtered by search)</span>
+          </>
+        ) : (
+          `Total genres: ${genres.length}`
+        )}
       </div>
     </div>
   );
