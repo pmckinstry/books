@@ -36,11 +36,6 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         </Link>
       </div>
 
-      {/* Debug component */}
-      <div className="mb-4">
-        <AuthDebugger />
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Book Details */}
         <div className="lg:col-span-2">

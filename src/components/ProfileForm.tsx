@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
+import Link from 'next/link';
 
 export default function ProfileForm() {
   const router = useRouter();
@@ -189,6 +190,24 @@ export default function ProfileForm() {
               </button>
             </div>
           </form>
+        </div>
+
+        {/* Read Books Section */}
+        <div className="mt-8 bg-white shadow rounded-lg p-6">
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Your Reading Progress
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              View and manage the books you've read or are currently reading
+            </p>
+            <Link
+              href="/read"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              View Read Books
+            </Link>
+          </div>
         </div>
       </div>
     </div>

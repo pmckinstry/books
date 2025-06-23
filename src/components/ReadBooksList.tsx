@@ -251,7 +251,11 @@ export default function ReadBooksList() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {books.map((book) => (
-                    <tr key={book.id} className="hover:bg-gray-50">
+                    <tr 
+                      key={book.id} 
+                      className="cursor-pointer hover:bg-gray-50 transition-colors duration-150"
+                      onClick={() => router.push(`/books/${book.id}`)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
                           {book.title}
@@ -284,12 +288,7 @@ export default function ReadBooksList() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link
-                          href={`/books/${book.id}`}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          View
-                        </Link>
+                        <span className="text-blue-600">View →</span>
                       </td>
                     </tr>
                   ))}

@@ -160,12 +160,6 @@ export default function Navigation() {
                 All Books
               </Link>
               <Link 
-                href="/read" 
-                className="hover:text-gray-300 transition-colors"
-              >
-                Read Books
-              </Link>
-              <Link 
                 href="/genres" 
                 className="hover:text-gray-300 transition-colors"
               >
@@ -177,27 +171,6 @@ export default function Navigation() {
               >
                 Welcome, {user.nickname || user.username}!
               </Link>
-              <button
-                onClick={handleRefreshAuth}
-                className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded"
-                title="Refresh auth status"
-              >
-                ↻
-              </button>
-              <button
-                onClick={handleForceClearAuth}
-                className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded"
-                title="Force clear all auth data"
-              >
-                🗑️
-              </button>
-              <button
-                onClick={handleDebugAuth}
-                className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded"
-                title="Debug auth state"
-              >
-                🔍
-              </button>
               <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded transition-colors"
