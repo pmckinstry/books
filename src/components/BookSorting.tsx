@@ -31,7 +31,6 @@ export default function BookSorting({ currentSortBy, currentSortOrder }: BookSor
       >
         <option value="title">Title</option>
         <option value="author">Author</option>
-        <option value="year">Year</option>
         <option value="isbn">ISBN</option>
         <option value="page_count">Pages</option>
         <option value="language">Language</option>

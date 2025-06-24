@@ -88,15 +88,6 @@ export default function BookTable({ books }: BookTableProps) {
               </th>
               <th 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => handleSort('year')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Year</span>
-                  {getSortIcon('year')}
-                </div>
-              </th>
-              <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('isbn')}
               >
                 <div className="flex items-center space-x-1">
@@ -141,15 +132,13 @@ export default function BookTable({ books }: BookTableProps) {
                 </td>
                 <td 
                   className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
-                  onClick={() => handleRowClick(book.id)}
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    params.set('search', book.author);
+                    router.push(`/books?${params.toString()}`);
+                  }}
                 >
                   {book.author}
-                </td>
-                <td 
-                  className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
-                  onClick={() => handleRowClick(book.id)}
-                >
-                  {book.year}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {book.isbn}
@@ -163,12 +152,14 @@ export default function BookTable({ books }: BookTableProps) {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <div className="flex flex-wrap gap-1">
                     {book.genres.map((genre) => (
-                      <span
+                      <Link
                         key={genre.id}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                        href={`/genres/${genre.id}`}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {genre.name}
-                      </span>
+                      </Link>
                     ))}
                   </div>
                 </td>

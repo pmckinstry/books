@@ -53,23 +53,15 @@ export async function PUT(
     const { 
       title, 
       author, 
-      year, 
       description, 
       isbn, 
       page_count, 
       language, 
       publisher, 
       cover_image_url, 
-      publication_date 
+      publication_date,
+      genres
     } = body;
-
-    // Validate year if provided
-    if (year !== undefined && (typeof year !== 'number' || year < 1000 || year > new Date().getFullYear() + 10)) {
-      return NextResponse.json(
-        { error: 'Year must be a valid number between 1000 and current year + 10' },
-        { status: 400 }
-      );
-    }
 
     // Validate ISBN format if provided
     if (isbn !== undefined && isbn && !/^(?:\d{10}|\d{13})$/.test(isbn.replace(/[-\s]/g, ''))) {
@@ -98,7 +90,6 @@ export async function PUT(
     const updateData: UpdateBookData = {};
     if (title !== undefined) updateData.title = title.trim();
     if (author !== undefined) updateData.author = author.trim();
-    if (year !== undefined) updateData.year = year;
     if (description !== undefined) updateData.description = description.trim();
     if (isbn !== undefined) updateData.isbn = isbn.trim();
     if (page_count !== undefined) updateData.page_count = page_count;
@@ -106,6 +97,37 @@ export async function PUT(
     if (publisher !== undefined) updateData.publisher = publisher.trim();
     if (cover_image_url !== undefined) updateData.cover_image_url = cover_image_url.trim();
     if (publication_date !== undefined) updateData.publication_date = publication_date.trim();
+    if (genres !== undefined) updateData.genres = genres;
+
+    // Get current book for duplicate check
+    const currentBook = bookOperations.getById(id);
+    if (!currentBook) {
+      return NextResponse.json(
+        { error: 'Book not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check for duplicate book if title or author is being updated
+    if ((title !== undefined && title !== currentBook.title) || (author !== undefined && author !== currentBook.author)) {
+      const newTitle = title !== undefined ? title : currentBook.title;
+      const newAuthor = author !== undefined ? author : currentBook.author;
+      
+      const existingBook = bookOperations.checkDuplicate(newTitle, newAuthor, id);
+      if (existingBook) {
+        return NextResponse.json(
+          { 
+            error: `A book with the title "${existingBook.title}" by "${existingBook.author}" already exists.`,
+            existingBook: {
+              id: existingBook.id,
+              title: existingBook.title,
+              author: existingBook.author
+            }
+          },
+          { status: 409 }
+        );
+      }
+    }
 
     const updatedBook = bookOperations.update(id, updateData);
     if (!updatedBook) {

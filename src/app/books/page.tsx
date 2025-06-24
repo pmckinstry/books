@@ -77,12 +77,20 @@ export default async function BooksListPage({
               )}
             </p>
           </div>
-          <Link 
-            href="/books/create"
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Add New Book
-          </Link>
+          <div className="flex space-x-3">
+            <Link 
+              href="/books/add-with-url"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Add from URL
+            </Link>
+            <Link 
+              href="/books/create"
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Add New Book
+            </Link>
+          </div>
         </div>
 
         <BookSearch />

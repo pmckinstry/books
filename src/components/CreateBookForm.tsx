@@ -15,7 +15,6 @@ export default function CreateBookForm() {
   const [formData, setFormData] = useState({
     title: '',
     author: '',
-    year: '',
     description: '',
     isbn: '',
     page_count: '',
@@ -61,15 +60,6 @@ export default function CreateBookForm() {
       newErrors.author = 'Author is required';
     }
 
-    if (!formData.year.trim()) {
-      newErrors.year = 'Year is required';
-    } else {
-      const year = parseInt(formData.year);
-      if (isNaN(year) || year < 1000 || year > new Date().getFullYear() + 10) {
-        newErrors.year = 'Year must be a valid number between 1000 and current year + 10';
-      }
-    }
-
     // Validate ISBN if provided
     if (formData.isbn.trim() && !/^(?:\d{10}|\d{13})$/.test(formData.isbn.replace(/[-\s]/g, ''))) {
       newErrors.isbn = 'ISBN must be a valid 10 or 13 digit number';
@@ -109,7 +99,6 @@ export default function CreateBookForm() {
       await api.createBook({
         title: formData.title.trim(),
         author: formData.author.trim(),
-        year: parseInt(formData.year),
         description: formData.description.trim() || undefined,
         isbn: formData.isbn.trim() || undefined,
         page_count: formData.page_count.trim() ? parseInt(formData.page_count) : undefined,
@@ -183,28 +172,6 @@ export default function CreateBookForm() {
             />
             {errors.author && (
               <p className="mt-1 text-sm text-red-600">{errors.author}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-2">
-              Publication Year *
-            </label>
-            <input
-              type="number"
-              id="year"
-              name="year"
-              value={formData.year}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                errors.year ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="Enter publication year"
-              min="1000"
-              max={new Date().getFullYear() + 10}
-            />
-            {errors.year && (
-              <p className="mt-1 text-sm text-red-600">{errors.year}</p>
             )}
           </div>
 

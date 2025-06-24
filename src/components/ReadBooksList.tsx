@@ -9,7 +9,6 @@ interface Book {
   id: number;
   title: string;
   author: string;
-  year: number;
   description?: string;
   genres: Array<{ id: number; name: string; description?: string }>;
   user_association?: {
@@ -174,7 +173,7 @@ export default function ReadBooksList() {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by title, author, or year..."
+                placeholder="Search by title or author..."
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               <button
@@ -226,15 +225,6 @@ export default function ReadBooksList() {
                         <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                       )}
                     </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort('year')}
-                    >
-                      Year
-                      {sortBy === 'year' && (
-                        <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                      )}
-                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Genres
                     </th>
@@ -262,20 +252,29 @@ export default function ReadBooksList() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{book.author}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{book.year}</div>
+                        <div 
+                          className="text-sm text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const params = new URLSearchParams();
+                            params.set('search', book.author);
+                            router.push(`/books?${params.toString()}`);
+                          }}
+                        >
+                          {book.author}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-wrap gap-1">
                           {book.genres.map((genre) => (
-                            <span
+                            <Link
                               key={genre.id}
-                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                              href={`/genres/${genre.id}`}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               {genre.name}
-                            </span>
+                            </Link>
                           ))}
                         </div>
                       </td>

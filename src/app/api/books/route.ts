@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
     const { 
       title, 
       author, 
-      year, 
       description, 
       isbn, 
       page_count, 
@@ -49,17 +48,9 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!title || !author || !year) {
+    if (!title || !author) {
       return NextResponse.json(
-        { error: 'Title, author, and year are required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate year is a number
-    if (typeof year !== 'number' || year < 1000 || year > new Date().getFullYear() + 10) {
-      return NextResponse.json(
-        { error: 'Year must be a valid number between 1000 and current year + 10' },
+        { error: 'Title and author are required' },
         { status: 400 }
       );
     }
@@ -99,7 +90,6 @@ export async function POST(request: NextRequest) {
     const bookData: CreateBookData = {
       title: title.trim(),
       author: author.trim(),
-      year,
       description: description?.trim(),
       isbn: isbn?.trim(),
       page_count: page_count ? parseInt(page_count) : undefined,
@@ -108,6 +98,22 @@ export async function POST(request: NextRequest) {
       cover_image_url: cover_image_url?.trim(),
       publication_date: publication_date?.trim()
     };
+
+    // Check for duplicate book
+    const existingBook = bookOperations.checkDuplicate(bookData.title, bookData.author);
+    if (existingBook) {
+      return NextResponse.json(
+        { 
+          error: `A book with the title "${existingBook.title}" by "${existingBook.author}" already exists.`,
+          existingBook: {
+            id: existingBook.id,
+            title: existingBook.title,
+            author: existingBook.author
+          }
+        },
+        { status: 409 }
+      );
+    }
 
     const newBook = bookOperations.create(bookData);
 

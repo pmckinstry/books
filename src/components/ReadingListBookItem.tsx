@@ -74,10 +74,20 @@ export default function ReadingListBookItem({ book, readingListId }: ReadingList
                   {book.title}
                 </Link>
               </h3>
-              <p className="text-gray-600">by {book.author}</p>
+              <p className="text-gray-600">
+                by <span 
+                  className="text-sm text-gray-600 cursor-pointer hover:text-blue-600 transition-colors"
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    params.set('search', book.author);
+                    window.location.href = `/books?${params.toString()}`;
+                  }}
+                >
+                  {book.author}
+                </span>
+              </p>
               
               <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                {book.year && <span>{book.year}</span>}
                 {book.page_count && <span>{book.page_count} pages</span>}
                 {book.language && <span>{book.language}</span>}
                 {book.isbn && <span>ISBN: {book.isbn}</span>}
@@ -86,12 +96,13 @@ export default function ReadingListBookItem({ book, readingListId }: ReadingList
               {book.genres && book.genres.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {book.genres.map((genre) => (
-                    <span
+                    <Link
                       key={genre.id}
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                      href={`/genres/${genre.id}`}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
                     >
                       {genre.name}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               )}

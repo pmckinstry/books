@@ -113,7 +113,6 @@ export default function DeleteBookForm({ bookId }: DeleteBookFormProps) {
             <div className="text-sm text-gray-600 space-y-1">
               <p><strong>Title:</strong> {book.title}</p>
               <p><strong>Author:</strong> {book.author}</p>
-              <p><strong>Year:</strong> {book.year}</p>
               {book.description && (
                 <p><strong>Description:</strong> {book.description}</p>
               )}

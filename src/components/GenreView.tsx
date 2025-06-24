@@ -176,7 +176,16 @@ export default function GenreView({ genreId }: GenreViewProps) {
                       {book.title}
                     </a>
                     <span className="ml-2 text-gray-600 text-sm">
-                      by {book.author} ({book.year})
+                      by <span 
+                        className="cursor-pointer hover:text-blue-600 transition-colors"
+                        onClick={() => {
+                          const params = new URLSearchParams();
+                          params.set('search', book.author);
+                          window.location.href = `/books?${params.toString()}`;
+                        }}
+                      >
+                        {book.author}
+                      </span>
                     </span>
                   </li>
                 ))}
