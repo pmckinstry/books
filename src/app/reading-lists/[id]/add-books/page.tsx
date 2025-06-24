@@ -72,6 +72,7 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
         const data = await response.json();
         setBooks(data.books || []);
       } else {
+        const errorData = await response.json();
         setError('Failed to search books');
       }
     } catch (error) {
@@ -84,6 +85,12 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     searchBooks();
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    setBooks([]);
+    setError('');
   };
 
   const toggleBookSelection = (bookId: number) => {
@@ -204,6 +211,15 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
             >
               {isSearching ? 'Searching...' : 'Search'}
             </button>
+            {searchTerm.trim() && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+              >
+                Clear
+              </button>
+            )}
           </form>
         </div>
 
