@@ -160,6 +160,12 @@ export default function Navigation() {
                 All Books
               </Link>
               <Link 
+                href="/reading-lists" 
+                className="hover:text-gray-300 transition-colors"
+              >
+                Reading Lists
+              </Link>
+              <Link 
                 href="/genres" 
                 className="hover:text-gray-300 transition-colors"
               >

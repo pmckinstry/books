@@ -79,6 +79,33 @@ function initializeDatabase() {
     )
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reading_lists (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      is_public BOOLEAN DEFAULT 0,
+      user_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reading_list_books (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      reading_list_id INTEGER NOT NULL,
+      book_id INTEGER NOT NULL,
+      position INTEGER DEFAULT 0,
+      notes TEXT,
+      added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (reading_list_id) REFERENCES reading_lists (id) ON DELETE CASCADE,
+      FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
+      UNIQUE(reading_list_id, book_id)
+    )
+  `);
+
   // Insert sample data if the table is empty
   const count = db.prepare('SELECT COUNT(*) as count FROM books').get() as { count: number };
   if (count.count === 0) {
@@ -852,5 +879,262 @@ export function getBooksForGenre(genreId: number) {
   `);
   return stmt.all(genreId) as Book[];
 }
+
+export interface ReadingList {
+  id: number;
+  name: string;
+  description?: string;
+  is_public: boolean;
+  user_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReadingListBook {
+  id: number;
+  reading_list_id: number;
+  book_id: number;
+  position: number;
+  notes?: string;
+  added_at: string;
+}
+
+export interface ReadingListWithBooks extends ReadingList {
+  books: (BookWithGenres & { reading_list_book: ReadingListBook })[];
+  book_count: number;
+}
+
+export interface CreateReadingListData {
+  name: string;
+  description?: string;
+  is_public?: boolean;
+  user_id: number;
+}
+
+export interface UpdateReadingListData {
+  name?: string;
+  description?: string;
+  is_public?: boolean;
+}
+
+export interface AddBookToListData {
+  reading_list_id: number;
+  book_id: number;
+  position?: number;
+  notes?: string;
+}
+
+export interface UpdateBookInListData {
+  position?: number;
+  notes?: string;
+}
+
+// Reading List operations
+export const readingListOperations = {
+  // Create a new reading list
+  create: (data: CreateReadingListData): ReadingList => {
+    const stmt = db.prepare(`
+      INSERT INTO reading_lists (name, description, is_public, user_id) 
+      VALUES (?, ?, ?, ?)
+    `);
+    const result = stmt.run(data.name, data.description, data.is_public ? 1 : 0, data.user_id);
+    
+    return readingListOperations.getById(result.lastInsertRowid as number)!;
+  },
+
+  // Get a reading list by ID
+  getById: (id: number): ReadingList | null => {
+    const stmt = db.prepare('SELECT * FROM reading_lists WHERE id = ?');
+    const readingList = stmt.get(id) as ReadingList | undefined;
+    return readingList || null;
+  },
+
+  // Get reading list with books
+  getByIdWithBooks: (id: number): ReadingListWithBooks | null => {
+    const readingList = readingListOperations.getById(id);
+    if (!readingList) return null;
+
+    const stmt = db.prepare(`
+      SELECT b.*, rlb.*, COUNT(*) OVER() as book_count
+      FROM reading_list_books rlb
+      JOIN books b ON rlb.book_id = b.id
+      WHERE rlb.reading_list_id = ?
+      ORDER BY rlb.position ASC, rlb.added_at ASC
+    `);
+    
+    const results = stmt.all(id) as any[];
+    
+    const books = results.map(row => ({
+      id: row.book_id,
+      title: row.title,
+      author: row.author,
+      year: row.year,
+      description: row.description,
+      isbn: row.isbn,
+      page_count: row.page_count,
+      language: row.language,
+      publisher: row.publisher,
+      cover_image_url: row.cover_image_url,
+      publication_date: row.publication_date,
+      user_id: row.user_id,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      genres: getGenresForBook(row.book_id),
+      reading_list_book: {
+        id: row.id,
+        reading_list_id: row.reading_list_id,
+        book_id: row.book_id,
+        position: row.position,
+        notes: row.notes,
+        added_at: row.added_at
+      }
+    }));
+
+    return {
+      ...readingList,
+      books,
+      book_count: results.length > 0 ? results[0].book_count : 0
+    };
+  },
+
+  // Get all reading lists for a user
+  getByUser: (userId: number): ReadingList[] => {
+    const stmt = db.prepare('SELECT * FROM reading_lists WHERE user_id = ? ORDER BY updated_at DESC');
+    return stmt.all(userId) as ReadingList[];
+  },
+
+  // Get public reading lists
+  getPublic: (): ReadingList[] => {
+    const stmt = db.prepare('SELECT * FROM reading_lists WHERE is_public = 1 ORDER BY updated_at DESC');
+    return stmt.all() as ReadingList[];
+  },
+
+  // Update a reading list
+  update: (id: number, data: UpdateReadingListData): ReadingList | null => {
+    const readingList = readingListOperations.getById(id);
+    if (!readingList) return null;
+
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (data.name !== undefined) {
+      updates.push('name = ?');
+      values.push(data.name);
+    }
+    if (data.description !== undefined) {
+      updates.push('description = ?');
+      values.push(data.description);
+    }
+    if (data.is_public !== undefined) {
+      updates.push('is_public = ?');
+      values.push(data.is_public ? 1 : 0);
+    }
+
+    if (updates.length === 0) return readingList;
+
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(id);
+
+    const stmt = db.prepare(`
+      UPDATE reading_lists 
+      SET ${updates.join(', ')} 
+      WHERE id = ?
+    `);
+    stmt.run(...values);
+
+    return readingListOperations.getById(id);
+  },
+
+  // Delete a reading list
+  delete: (id: number): boolean => {
+    const stmt = db.prepare('DELETE FROM reading_lists WHERE id = ?');
+    const result = stmt.run(id);
+    return result.changes > 0;
+  },
+
+  // Add a book to a reading list
+  addBook: (data: AddBookToListData): ReadingListBook | null => {
+    try {
+      // Get the next position if not specified
+      if (data.position === undefined) {
+        const maxPosStmt = db.prepare('SELECT MAX(position) as max_pos FROM reading_list_books WHERE reading_list_id = ?');
+        const result = maxPosStmt.get(data.reading_list_id) as { max_pos: number | null };
+        data.position = (result.max_pos || 0) + 1;
+      }
+
+      const stmt = db.prepare(`
+        INSERT INTO reading_list_books (reading_list_id, book_id, position, notes) 
+        VALUES (?, ?, ?, ?)
+      `);
+      const result = stmt.run(data.reading_list_id, data.book_id, data.position, data.notes || null);
+      
+      return readingListOperations.getBookInList(data.reading_list_id, data.book_id);
+    } catch (error) {
+      console.error('Error adding book to reading list:', error);
+      return null;
+    }
+  },
+
+  // Remove a book from a reading list
+  removeBook: (readingListId: number, bookId: number): boolean => {
+    const stmt = db.prepare('DELETE FROM reading_list_books WHERE reading_list_id = ? AND book_id = ?');
+    const result = stmt.run(readingListId, bookId);
+    return result.changes > 0;
+  },
+
+  // Get a book in a reading list
+  getBookInList: (readingListId: number, bookId: number): ReadingListBook | null => {
+    const stmt = db.prepare('SELECT * FROM reading_list_books WHERE reading_list_id = ? AND book_id = ?');
+    const readingListBook = stmt.get(readingListId, bookId) as ReadingListBook | undefined;
+    return readingListBook || null;
+  },
+
+  // Update a book in a reading list
+  updateBookInList: (readingListId: number, bookId: number, data: UpdateBookInListData): ReadingListBook | null => {
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (data.position !== undefined) {
+      updates.push('position = ?');
+      values.push(data.position);
+    }
+    if (data.notes !== undefined) {
+      updates.push('notes = ?');
+      values.push(data.notes);
+    }
+
+    if (updates.length === 0) {
+      return readingListOperations.getBookInList(readingListId, bookId);
+    }
+
+    values.push(readingListId, bookId);
+
+    const stmt = db.prepare(`
+      UPDATE reading_list_books 
+      SET ${updates.join(', ')} 
+      WHERE reading_list_id = ? AND book_id = ?
+    `);
+    stmt.run(...values);
+
+    return readingListOperations.getBookInList(readingListId, bookId);
+  },
+
+  // Reorder books in a reading list
+  reorderBooks: (readingListId: number, bookIds: number[]): boolean => {
+    try {
+      const stmt = db.prepare('UPDATE reading_list_books SET position = ? WHERE reading_list_id = ? AND book_id = ?');
+      
+      bookIds.forEach((bookId, index) => {
+        stmt.run(index + 1, readingListId, bookId);
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error reordering books in reading list:', error);
+      return false;
+    }
+  }
+};
+
 // Initialize the database
 initializeDatabase();
