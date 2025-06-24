@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { bookOperations, userBookAssociationOperations } from '@/lib/database';
 import UserBookAssociation from '@/components/UserBookAssociation';
+import BookCoverImage from '@/components/BookCoverImage';
 import AuthDebugger from '@/components/AuthDebugger';
 
 interface BookDetailPageProps {
@@ -52,6 +53,55 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 <div>
                   <span className="font-semibold text-gray-700">Year:</span>
                   <span className="ml-2 text-gray-900">{book.year}</span>
+                </div>
+              )}
+
+              {book.isbn && (
+                <div>
+                  <span className="font-semibold text-gray-700">ISBN:</span>
+                  <span className="ml-2 text-gray-900">{book.isbn}</span>
+                </div>
+              )}
+
+              {book.page_count && (
+                <div>
+                  <span className="font-semibold text-gray-700">Pages:</span>
+                  <span className="ml-2 text-gray-900">{book.page_count}</span>
+                </div>
+              )}
+
+              {book.language && (
+                <div>
+                  <span className="font-semibold text-gray-700">Language:</span>
+                  <span className="ml-2 text-gray-900">{book.language}</span>
+                </div>
+              )}
+
+              {book.publisher && (
+                <div>
+                  <span className="font-semibold text-gray-700">Publisher:</span>
+                  <span className="ml-2 text-gray-900">{book.publisher}</span>
+                </div>
+              )}
+
+              {book.publication_date && (
+                <div>
+                  <span className="font-semibold text-gray-700">Publication Date:</span>
+                  <span className="ml-2 text-gray-900">
+                    {new Date(book.publication_date).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+
+              {book.cover_image_url && (
+                <div>
+                  <span className="font-semibold text-gray-700">Cover Image:</span>
+                  <div className="mt-2">
+                    <BookCoverImage 
+                      src={book.cover_image_url} 
+                      alt={`Cover of ${book.title}`}
+                    />
+                  </div>
                 </div>
               )}
 

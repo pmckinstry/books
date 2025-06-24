@@ -25,7 +25,7 @@ export const api = {
   },
 
   // Create a new book
-  async createBook(data: CreateBookData): Promise<Book> {
+  async createBook(data: CreateBookData & { genres: number[] }): Promise<Book> {
     const response = await fetch(API_BASE, {
       method: 'POST',
       headers: {

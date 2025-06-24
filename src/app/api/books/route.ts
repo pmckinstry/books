@@ -33,7 +33,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, author, year, description, genres } = body;
+    const { 
+      title, 
+      author, 
+      year, 
+      description, 
+      isbn, 
+      page_count, 
+      language, 
+      publisher, 
+      cover_image_url, 
+      publication_date, 
+      genres 
+    } = body;
 
     // Validate required fields
     if (!title || !author || !year) {
@@ -51,6 +63,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate ISBN format if provided
+    if (isbn && !/^(?:\d{10}|\d{13})$/.test(isbn.replace(/[-\s]/g, ''))) {
+      return NextResponse.json(
+        { error: 'ISBN must be a valid 10 or 13 digit number' },
+        { status: 400 }
+      );
+    }
+
+    // Validate page count if provided
+    if (page_count && (typeof page_count !== 'number' || page_count < 1)) {
+      return NextResponse.json(
+        { error: 'Page count must be a positive number' },
+        { status: 400 }
+      );
+    }
+
+    // Validate publication date if provided
+    if (publication_date && !/^\d{4}-\d{2}-\d{2}$/.test(publication_date)) {
+      return NextResponse.json(
+        { error: 'Publication date must be in YYYY-MM-DD format' },
+        { status: 400 }
+      );
+    }
+
     // Validate genres
     if (!Array.isArray(genres) || genres.length === 0) {
       return NextResponse.json(
@@ -63,7 +99,13 @@ export async function POST(request: NextRequest) {
       title: title.trim(),
       author: author.trim(),
       year,
-      description: description?.trim()
+      description: description?.trim(),
+      isbn: isbn?.trim(),
+      page_count: page_count ? parseInt(page_count) : undefined,
+      language: language?.trim() || 'English',
+      publisher: publisher?.trim(),
+      cover_image_url: cover_image_url?.trim(),
+      publication_date: publication_date?.trim()
     };
 
     const newBook = bookOperations.create(bookData);

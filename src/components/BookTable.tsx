@@ -95,6 +95,33 @@ export default function BookTable({ books }: BookTableProps) {
                   {getSortIcon('year')}
                 </div>
               </th>
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('isbn')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>ISBN</span>
+                  {getSortIcon('isbn')}
+                </div>
+              </th>
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('page_count')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Pages</span>
+                  {getSortIcon('page_count')}
+                </div>
+              </th>
+              <th 
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('language')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Language</span>
+                  {getSortIcon('language')}
+                </div>
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Genres
               </th>
@@ -123,6 +150,15 @@ export default function BookTable({ books }: BookTableProps) {
                   onClick={() => handleRowClick(book.id)}
                 >
                   {book.year}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {book.isbn}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {book.page_count}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {book.language}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <div className="flex flex-wrap gap-1">

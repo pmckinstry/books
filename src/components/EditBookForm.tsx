@@ -17,7 +17,13 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
     title: '',
     author: '',
     year: '',
-    description: ''
+    description: '',
+    isbn: '',
+    page_count: '',
+    language: 'English',
+    publisher: '',
+    cover_image_url: '',
+    publication_date: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -32,7 +38,13 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
           title: bookData.title,
           author: bookData.author,
           year: bookData.year.toString(),
-          description: bookData.description || ''
+          description: bookData.description || '',
+          isbn: bookData.isbn || '',
+          page_count: bookData.page_count?.toString() || '',
+          language: bookData.language || 'English',
+          publisher: bookData.publisher || '',
+          cover_image_url: bookData.cover_image_url || '',
+          publication_date: bookData.publication_date || ''
         });
       } catch (error) {
         console.error('Error fetching book:', error);
@@ -92,7 +104,13 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
         title: formData.title.trim(),
         author: formData.author.trim(),
         year: parseInt(formData.year),
-        description: formData.description.trim() || undefined
+        description: formData.description.trim() || undefined,
+        isbn: formData.isbn.trim() || undefined,
+        page_count: parseInt(formData.page_count) || undefined,
+        language: formData.language.trim() || undefined,
+        publisher: formData.publisher.trim() || undefined,
+        cover_image_url: formData.cover_image_url.trim() || undefined,
+        publication_date: formData.publication_date.trim() || undefined
       });
 
       router.push(`/books/${bookId}`);
@@ -221,6 +239,120 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
+          </div>
+
+          <div>
+            <label htmlFor="isbn" className="block text-sm font-medium text-gray-700 mb-2">
+              ISBN
+            </label>
+            <input
+              type="text"
+              id="isbn"
+              name="isbn"
+              value={formData.isbn}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                errors.isbn ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.isbn && (
+              <p className="mt-1 text-sm text-red-600">{errors.isbn}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="page_count" className="block text-sm font-medium text-gray-700 mb-2">
+              Page Count
+            </label>
+            <input
+              type="number"
+              id="page_count"
+              name="page_count"
+              value={formData.page_count}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                errors.page_count ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.page_count && (
+              <p className="mt-1 text-sm text-red-600">{errors.page_count}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-2">
+              Language
+            </label>
+            <input
+              type="text"
+              id="language"
+              name="language"
+              value={formData.language}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                errors.language ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.language && (
+              <p className="mt-1 text-sm text-red-600">{errors.language}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="publisher" className="block text-sm font-medium text-gray-700 mb-2">
+              Publisher
+            </label>
+            <input
+              type="text"
+              id="publisher"
+              name="publisher"
+              value={formData.publisher}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                errors.publisher ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.publisher && (
+              <p className="mt-1 text-sm text-red-600">{errors.publisher}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="cover_image_url" className="block text-sm font-medium text-gray-700 mb-2">
+              Cover Image URL
+            </label>
+            <input
+              type="text"
+              id="cover_image_url"
+              name="cover_image_url"
+              value={formData.cover_image_url}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                errors.cover_image_url ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.cover_image_url && (
+              <p className="mt-1 text-sm text-red-600">{errors.cover_image_url}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="publication_date" className="block text-sm font-medium text-gray-700 mb-2">
+              Publication Date
+            </label>
+            <input
+              type="text"
+              id="publication_date"
+              name="publication_date"
+              value={formData.publication_date}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                errors.publication_date ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.publication_date && (
+              <p className="mt-1 text-sm text-red-600">{errors.publication_date}</p>
+            )}
           </div>
 
           {errors.submit && (

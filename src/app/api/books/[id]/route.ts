@@ -50,7 +50,18 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { title, author, year, description } = body;
+    const { 
+      title, 
+      author, 
+      year, 
+      description, 
+      isbn, 
+      page_count, 
+      language, 
+      publisher, 
+      cover_image_url, 
+      publication_date 
+    } = body;
 
     // Validate year if provided
     if (year !== undefined && (typeof year !== 'number' || year < 1000 || year > new Date().getFullYear() + 10)) {
@@ -60,11 +71,41 @@ export async function PUT(
       );
     }
 
+    // Validate ISBN format if provided
+    if (isbn !== undefined && isbn && !/^(?:\d{10}|\d{13})$/.test(isbn.replace(/[-\s]/g, ''))) {
+      return NextResponse.json(
+        { error: 'ISBN must be a valid 10 or 13 digit number' },
+        { status: 400 }
+      );
+    }
+
+    // Validate page count if provided
+    if (page_count !== undefined && page_count && (typeof page_count !== 'number' || page_count < 1)) {
+      return NextResponse.json(
+        { error: 'Page count must be a positive number' },
+        { status: 400 }
+      );
+    }
+
+    // Validate publication date if provided
+    if (publication_date !== undefined && publication_date && !/^\d{4}-\d{2}-\d{2}$/.test(publication_date)) {
+      return NextResponse.json(
+        { error: 'Publication date must be in YYYY-MM-DD format' },
+        { status: 400 }
+      );
+    }
+
     const updateData: UpdateBookData = {};
     if (title !== undefined) updateData.title = title.trim();
     if (author !== undefined) updateData.author = author.trim();
     if (year !== undefined) updateData.year = year;
     if (description !== undefined) updateData.description = description.trim();
+    if (isbn !== undefined) updateData.isbn = isbn.trim();
+    if (page_count !== undefined) updateData.page_count = page_count;
+    if (language !== undefined) updateData.language = language.trim();
+    if (publisher !== undefined) updateData.publisher = publisher.trim();
+    if (cover_image_url !== undefined) updateData.cover_image_url = cover_image_url.trim();
+    if (publication_date !== undefined) updateData.publication_date = publication_date.trim();
 
     const updatedBook = bookOperations.update(id, updateData);
     if (!updatedBook) {

@@ -16,7 +16,13 @@ export default function CreateBookForm() {
     title: '',
     author: '',
     year: '',
-    description: ''
+    description: '',
+    isbn: '',
+    page_count: '',
+    language: 'English',
+    publisher: '',
+    cover_image_url: '',
+    publication_date: ''
   });
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -64,6 +70,24 @@ export default function CreateBookForm() {
       }
     }
 
+    // Validate ISBN if provided
+    if (formData.isbn.trim() && !/^(?:\d{10}|\d{13})$/.test(formData.isbn.replace(/[-\s]/g, ''))) {
+      newErrors.isbn = 'ISBN must be a valid 10 or 13 digit number';
+    }
+
+    // Validate page count if provided
+    if (formData.page_count.trim()) {
+      const pageCount = parseInt(formData.page_count);
+      if (isNaN(pageCount) || pageCount < 1) {
+        newErrors.page_count = 'Page count must be a positive number';
+      }
+    }
+
+    // Validate publication date if provided
+    if (formData.publication_date.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(formData.publication_date)) {
+      newErrors.publication_date = 'Publication date must be in YYYY-MM-DD format';
+    }
+
     if (selectedGenres.length === 0) {
       newErrors.genres = 'Please select at least one genre';
     }
@@ -87,6 +111,12 @@ export default function CreateBookForm() {
         author: formData.author.trim(),
         year: parseInt(formData.year),
         description: formData.description.trim() || undefined,
+        isbn: formData.isbn.trim() || undefined,
+        page_count: formData.page_count.trim() ? parseInt(formData.page_count) : undefined,
+        language: formData.language.trim(),
+        publisher: formData.publisher.trim() || undefined,
+        cover_image_url: formData.cover_image_url.trim() || undefined,
+        publication_date: formData.publication_date.trim() || undefined,
         genres: selectedGenres
       });
 
@@ -191,6 +221,116 @@ export default function CreateBookForm() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter book description (optional)"
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="isbn" className="block text-sm font-medium text-gray-700 mb-2">
+                ISBN
+              </label>
+              <input
+                type="text"
+                id="isbn"
+                name="isbn"
+                value={formData.isbn}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.isbn ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Enter ISBN (optional)"
+              />
+              {errors.isbn && (
+                <p className="mt-1 text-sm text-red-600">{errors.isbn}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="page_count" className="block text-sm font-medium text-gray-700 mb-2">
+                Page Count
+              </label>
+              <input
+                type="number"
+                id="page_count"
+                name="page_count"
+                value={formData.page_count}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.page_count ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Enter page count (optional)"
+                min="1"
+              />
+              {errors.page_count && (
+                <p className="mt-1 text-sm text-red-600">{errors.page_count}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-2">
+                Language
+              </label>
+              <input
+                type="text"
+                id="language"
+                name="language"
+                value={formData.language}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter language"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="publisher" className="block text-sm font-medium text-gray-700 mb-2">
+                Publisher
+              </label>
+              <input
+                type="text"
+                id="publisher"
+                name="publisher"
+                value={formData.publisher}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter publisher (optional)"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="cover_image_url" className="block text-sm font-medium text-gray-700 mb-2">
+              Cover Image URL
+            </label>
+            <input
+              type="url"
+              id="cover_image_url"
+              name="cover_image_url"
+              value={formData.cover_image_url}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter cover image URL (optional)"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="publication_date" className="block text-sm font-medium text-gray-700 mb-2">
+              Publication Date
+            </label>
+            <input
+              type="date"
+              id="publication_date"
+              name="publication_date"
+              value={formData.publication_date}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                errors.publication_date ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="Enter publication date (optional)"
+            />
+            {errors.publication_date && (
+              <p className="mt-1 text-sm text-red-600">{errors.publication_date}</p>
+            )}
           </div>
 
           <div>
