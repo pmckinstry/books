@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { readingListOperations } from '@/lib/database';
 import AuthGuard from '@/components/AuthGuard';
 import ReadingListBookItem from '@/components/ReadingListBookItem';
+import ReadingListRecommendations from '@/components/ReadingListRecommendations';
 
 interface ReadingListDetailPageProps {
   params: Promise<{ id: string }>;
@@ -84,7 +85,7 @@ export default async function ReadingListDetailPage({ params }: ReadingListDetai
         </div>
 
         {/* Books List */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden mb-8">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">Books in this list</h2>
           </div>
@@ -119,6 +120,9 @@ export default async function ReadingListDetailPage({ params }: ReadingListDetai
             </div>
           )}
         </div>
+
+        {/* Recommendations Section */}
+        <ReadingListRecommendations readingListId={readingList.id} />
       </div>
     </AuthGuard>
   );
