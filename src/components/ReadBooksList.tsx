@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
-import RecommendationsList from './RecommendationsList';
+import CombinedRecommendations from './CombinedRecommendations';
 
 interface Book {
   id: number;
@@ -36,9 +36,6 @@ export default function ReadBooksList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('title');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [recommendations, setRecommendations] = useState([]);
-  const [recLoading, setRecLoading] = useState(true);
-  const [recError, setRecError] = useState<string | null>(null);
 
   const page = parseInt(searchParams.get('page') || '1');
   const limit = 10;
@@ -50,37 +47,6 @@ export default function ReadBooksList() {
   useEffect(() => {
     fetchReadBooks();
   }, [currentPage, searchTerm, sortBy, sortOrder]);
-
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      setRecLoading(true);
-      try {
-        // Get current user to include user ID in request
-        const currentUser = getCurrentUser();
-        if (!currentUser) {
-          setRecError('User not authenticated');
-          setRecommendations([]);
-          return;
-        }
-
-        const res = await fetch('/api/recommendations', {
-          headers: {
-            'Authorization': `Bearer ${Buffer.from(JSON.stringify({ userId: currentUser.id })).toString('base64')}`
-          }
-        });
-        if (!res.ok) throw new Error('Failed to fetch recommendations');
-        const data = await res.json();
-        setRecommendations(data.recommendations || []);
-        setRecError(null);
-      } catch (err) {
-        setRecError(err instanceof Error ? err.message : 'An error occurred');
-        setRecommendations([]);
-      } finally {
-        setRecLoading(false);
-      }
-    };
-    fetchRecommendations();
-  }, []);
 
   const fetchReadBooks = async () => {
     setLoading(true);
@@ -370,14 +336,9 @@ export default function ReadBooksList() {
         )}
 
         {/* Recommendations Section */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-semibold mb-4">Book Recommendations</h2>
-          <RecommendationsList
-            recommendations={recommendations}
-            loading={recLoading}
-            error={recError}
-          />
-        </div>
+        <CombinedRecommendations 
+          userId={getCurrentUser()?.id}
+        />
       </div>
     </div>
   );

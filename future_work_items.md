@@ -117,3 +117,4 @@ Reading Statistics Dashboard - Show basic analytics about reading habits
 Bulk Operations - Allow selecting multiple books for operations
 Book Cover Upload - Enable local image uploads
 Reading Progress Tracking - Track current page/progress for books being read
+

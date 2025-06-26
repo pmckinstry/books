@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { readingListOperations } from '@/lib/database';
 import AuthGuard from '@/components/AuthGuard';
 import ReadingListBookItem from '@/components/ReadingListBookItem';
-import ReadingListRecommendations from '@/components/ReadingListRecommendations';
+import CombinedRecommendations from '@/components/CombinedRecommendations';
 
 interface ReadingListDetailPageProps {
   params: Promise<{ id: string }>;
@@ -122,7 +122,11 @@ export default async function ReadingListDetailPage({ params }: ReadingListDetai
         </div>
 
         {/* Recommendations Section */}
-        <ReadingListRecommendations readingListId={readingList.id} />
+        <CombinedRecommendations 
+          readingListId={readingList.id}
+          bookTitle={readingList.books.length > 0 ? readingList.books[0].title : undefined}
+          bookAuthor={readingList.books.length > 0 ? readingList.books[0].author : undefined}
+        />
       </div>
     </AuthGuard>
   );

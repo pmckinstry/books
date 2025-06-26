@@ -4,6 +4,7 @@ import { bookOperations } from '@/lib/database';
 import BookCoverImage from '@/components/BookCoverImage';
 import AuthDebugger from '@/components/AuthDebugger';
 import BookDetailsClient from '@/components/BookDetailsClient';
+import CombinedRecommendations from '@/components/CombinedRecommendations';
 
 interface BookPageProps {
   params: Promise<{ id: string }>;
@@ -63,6 +64,12 @@ export default async function BookPage({ params }: BookPageProps) {
             </div>
           </div>
         </div>
+
+        {/* Recommendations Section */}
+        <CombinedRecommendations 
+          bookTitle={book.title}
+          bookAuthor={book.author}
+        />
 
         <AuthDebugger />
       </div>
