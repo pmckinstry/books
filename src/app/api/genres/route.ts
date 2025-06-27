@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { genreOperations } from '@/lib/database';
 
 export async function GET(request: NextRequest) {
   try {
-    const dbPath = path.join(process.cwd(), 'data', 'books.db');
-    const db = new Database(dbPath);
-    const genres = db.prepare('SELECT id, name, description FROM genres ORDER BY name').all();
-    db.close();
+    const genres = genreOperations.getAll();
     return NextResponse.json({ genres });
   } catch (error) {
     console.error('Error fetching genres:', error);
@@ -23,26 +19,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Genre name is required' }, { status: 400 });
     }
 
-    const dbPath = path.join(process.cwd(), 'data', 'books.db');
-    const db = new Database(dbPath);
-
     // Check if genre already exists
-    const existingGenre = db.prepare('SELECT id FROM genres WHERE name = ?').get(name.trim());
+    const existingGenre = genreOperations.checkDuplicate(name);
     if (existingGenre) {
-      db.close();
       return NextResponse.json({ error: 'Genre already exists' }, { status: 409 });
     }
 
-    // Insert new genre
-    const result = db.prepare(
-      'INSERT INTO genres (name, description) VALUES (?, ?)'
-    ).run(name.trim(), description?.trim() || null);
-
-    db.close();
+    // Create new genre
+    const newGenre = genreOperations.create({ name, description });
 
     return NextResponse.json({ 
       message: 'Genre created successfully',
-      id: result.lastInsertRowid 
+      id: newGenre.id 
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating genre:', error);

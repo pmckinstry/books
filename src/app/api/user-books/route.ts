@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userBookAssociationOperations, userOperations } from '@/lib/database';
+import { userBookAssociationOperations, userOperations, bookOperations } from '@/lib/database';
 
 // GET /api/user-books - Get user's book associations
 export async function GET(request: NextRequest) {
@@ -92,7 +92,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Debug: Check if book exists
-    const { bookOperations } = await import('@/lib/database');
     const book = bookOperations.getById(book_id);
     if (!book) {
       return NextResponse.json(

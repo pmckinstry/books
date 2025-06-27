@@ -244,6 +244,9 @@ function initializeDatabase() {
 // Initialize the database
 initializeDatabase();
 
+// Export the database instance for scripts that need direct access
+export const getDatabase = () => db;
+
 export interface User {
   id: number;
   username: string;
@@ -769,7 +772,7 @@ export const bookOperations = {
   },
 
   // Create a new book
-  create: (data: CreateBookData): Book => {
+  create: (data: CreateBookData, genres?: number[]): BookWithGenres => {
     const stmt = db.prepare(`
       INSERT INTO books (title, author, description, isbn, page_count, language, publisher, cover_image_url, publication_date, user_id) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -787,8 +790,15 @@ export const bookOperations = {
       data.user_id
     );
     
-    // Return the created book
-    return bookOperations.getById(result.lastInsertRowid as number)!;
+    const bookId = result.lastInsertRowid as number;
+    
+    // Add genres if provided
+    if (genres && genres.length > 0) {
+      bookOperations.setGenres(bookId, genres);
+    }
+    
+    // Return the created book with genres
+    return bookOperations.getById(bookId)!;
   },
 
   // Update a book
@@ -849,14 +859,7 @@ export const bookOperations = {
 
     // Update genres if provided
     if (data.genres) {
-      // Remove existing genres
-      const deleteStmt = db.prepare('DELETE FROM book_genres WHERE book_id = ?');
-      deleteStmt.run(id);
-      // Insert new genres
-      const insertStmt = db.prepare('INSERT INTO book_genres (book_id, genre_id) VALUES (?, ?)');
-      for (const genreId of data.genres) {
-        insertStmt.run(id, genreId);
-      }
+      bookOperations.setGenres(id, data.genres);
     }
 
     return bookOperations.getById(id);
@@ -884,6 +887,35 @@ export const bookOperations = {
     
     const book = stmt.get(...params) as Book | undefined;
     return book || null;
+  },
+
+  // Set genres for a book (replaces existing genres)
+  setGenres: (bookId: number, genreIds: number[]): void => {
+    // Remove existing genres
+    const deleteStmt = db.prepare('DELETE FROM book_genres WHERE book_id = ?');
+    deleteStmt.run(bookId);
+    
+    // Insert new genres
+    const insertStmt = db.prepare('INSERT INTO book_genres (book_id, genre_id) VALUES (?, ?)');
+    for (const genreId of genreIds) {
+      insertStmt.run(bookId, genreId);
+    }
+  },
+
+  // Add genres to a book (keeps existing genres)
+  addGenres: (bookId: number, genreIds: number[]): void => {
+    const insertStmt = db.prepare('INSERT OR IGNORE INTO book_genres (book_id, genre_id) VALUES (?, ?)');
+    for (const genreId of genreIds) {
+      insertStmt.run(bookId, genreId);
+    }
+  },
+
+  // Remove genres from a book
+  removeGenres: (bookId: number, genreIds: number[]): void => {
+    const deleteStmt = db.prepare('DELETE FROM book_genres WHERE book_id = ? AND genre_id = ?');
+    for (const genreId of genreIds) {
+      deleteStmt.run(bookId, genreId);
+    }
   }
 };
 
@@ -896,6 +928,90 @@ export function getBooksForGenre(genreId: number) {
   `);
   return stmt.all(genreId) as Book[];
 }
+
+// Genre CRUD operations
+export const genreOperations = {
+  // Get all genres
+  getAll: (): Genre[] => {
+    const stmt = db.prepare('SELECT id, name, description FROM genres ORDER BY name');
+    return stmt.all() as Genre[];
+  },
+
+  // Get a single genre by ID
+  getById: (id: number): Genre | null => {
+    const stmt = db.prepare('SELECT id, name, description FROM genres WHERE id = ?');
+    const genre = stmt.get(id) as Genre | undefined;
+    return genre || null;
+  },
+
+  // Create a new genre
+  create: (data: { name: string; description?: string }): Genre => {
+    const stmt = db.prepare('INSERT INTO genres (name, description) VALUES (?, ?)');
+    const result = stmt.run(data.name.trim(), data.description?.trim() || null);
+    
+    // Return the created genre
+    return genreOperations.getById(result.lastInsertRowid as number)!;
+  },
+
+  // Update a genre
+  update: (id: number, data: { name?: string; description?: string }): Genre | null => {
+    const genre = genreOperations.getById(id);
+    if (!genre) return null;
+
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (data.name !== undefined) {
+      updates.push('name = ?');
+      values.push(data.name.trim());
+    }
+    if (data.description !== undefined) {
+      updates.push('description = ?');
+      values.push(data.description.trim() || null);
+    }
+
+    if (updates.length > 0) {
+      values.push(id);
+      const stmt = db.prepare(`
+        UPDATE genres 
+        SET ${updates.join(', ')} 
+        WHERE id = ?
+      `);
+      stmt.run(...values);
+    }
+
+    return genreOperations.getById(id);
+  },
+
+  // Delete a genre
+  delete: (id: number): boolean => {
+    const stmt = db.prepare('DELETE FROM genres WHERE id = ?');
+    const result = stmt.run(id);
+    return result.changes > 0;
+  },
+
+  // Check if a genre with the same name already exists
+  checkDuplicate: (name: string, excludeId?: number): Genre | null => {
+    let stmt;
+    let params;
+    
+    if (excludeId) {
+      stmt = db.prepare('SELECT * FROM genres WHERE LOWER(name) = LOWER(?) AND id != ?');
+      params = [name.trim(), excludeId];
+    } else {
+      stmt = db.prepare('SELECT * FROM genres WHERE LOWER(name) = LOWER(?)');
+      params = [name.trim()];
+    }
+    
+    const genre = stmt.get(...params) as Genre | undefined;
+    return genre || null;
+  },
+
+  // Get books for a specific genre
+  getBooks: (genreId: number): Book[] => {
+    return getBooksForGenre(genreId);
+  }
+};
 
 export interface ReadingList {
   id: number;

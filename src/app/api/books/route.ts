@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bookOperations, CreateBookData } from '@/lib/database';
-import Database from 'better-sqlite3';
-import path from 'path';
 
 // GET /api/books - Get all books (with optional pagination)
 export async function GET(request: NextRequest) {
@@ -115,20 +113,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newBook = bookOperations.create(bookData);
+    // Create the book with genres using the database abstraction layer
+    const newBook = bookOperations.create(bookData, genres);
 
-    // Save genres
-    const dbPath = path.join(process.cwd(), 'data', 'books.db');
-    const db = new Database(dbPath);
-    const insertBookGenre = db.prepare('INSERT INTO book_genres (book_id, genre_id) VALUES (?, ?)');
-    for (const genreId of genres) {
-      insertBookGenre.run(newBook.id, genreId);
-    }
-    db.close();
-
-    // Return the book with genres
-    const bookWithGenres = bookOperations.getById(newBook.id);
-    return NextResponse.json(bookWithGenres, { status: 201 });
+    return NextResponse.json(newBook, { status: 201 });
   } catch (error) {
     console.error('Error creating book:', error);
     return NextResponse.json(
