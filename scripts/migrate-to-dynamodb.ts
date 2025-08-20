@@ -1,3 +1,5 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 import { getDatabase } from '../src/lib/database';
 import { 
   userOperations, 
@@ -5,10 +7,13 @@ import {
   genreOperations, 
   readingListOperations,
   userBookAssociationOperations 
-} from '../src/lib/firebase-database';
+} from '../src/lib/dynamodb-database';
 
-async function migrateToFirebase() {
-  console.log('Starting migration from SQLite to Firebase...');
+// Load environment variables first
+dotenv.config({ path: path.join(__dirname, '..', '.env.local') });
+
+async function migrateToDynamoDB() {
+  console.log('Starting migration from SQLite to DynamoDB...');
   
   try {
     const db = getDatabase();
@@ -16,7 +21,7 @@ async function migrateToFirebase() {
     // Migrate genres first (they're referenced by books)
     console.log('Migrating genres...');
     const genres = db.prepare('SELECT * FROM genres').all();
-    const genreIdMap = new Map<number, string>(); // SQLite ID -> Firebase ID
+    const genreIdMap = new Map<number, string>(); // SQLite ID -> DynamoDB ID
     
     for (const genre of genres) {
       const newGenre = await genreOperations.create({
@@ -33,7 +38,7 @@ async function migrateToFirebase() {
     // Migrate users
     console.log('Migrating users...');
     const users = db.prepare('SELECT * FROM users').all();
-    const userIdMap = new Map<number, string>(); // SQLite ID -> Firebase ID
+    const userIdMap = new Map<number, string>(); // SQLite ID -> DynamoDB ID
     
     for (const user of users) {
       // Note: We can't migrate passwords, so we'll create users with a default password
@@ -53,7 +58,7 @@ async function migrateToFirebase() {
     // Migrate books
     console.log('Migrating books...');
     const books = db.prepare('SELECT * FROM books').all();
-    const bookIdMap = new Map<number, string>(); // SQLite ID -> Firebase ID
+    const bookIdMap = new Map<number, string>(); // SQLite ID -> DynamoDB ID
     
     for (const book of books) {
       // Get genres for this book
@@ -109,7 +114,7 @@ async function migrateToFirebase() {
     // Migrate reading lists
     console.log('Migrating reading lists...');
     const readingLists = db.prepare('SELECT * FROM reading_lists').all();
-    const readingListIdMap = new Map<number, string>(); // SQLite ID -> Firebase ID
+    const readingListIdMap = new Map<number, string>(); // SQLite ID -> DynamoDB ID
     
     for (const readingList of readingLists) {
       const newUserId = userIdMap.get(readingList.user_id);
@@ -159,7 +164,7 @@ async function migrateToFirebase() {
     console.log('\nImportant Notes:');
     console.log('- All users have been given the default password: "changeme123"');
     console.log('- Users should change their passwords after first login');
-    console.log('- All data has been preserved with new Firebase document IDs');
+    console.log('- All data has been preserved with new DynamoDB document IDs');
     
   } catch (error) {
     console.error('Migration failed:', error);
@@ -169,8 +174,7 @@ async function migrateToFirebase() {
 
 // Run migration if this script is executed directly
 if (require.main === module) {
-  migrateToFirebase();
+  migrateToDynamoDB();
 }
 
-export { migrateToFirebase };
-
+export { migrateToDynamoDB };

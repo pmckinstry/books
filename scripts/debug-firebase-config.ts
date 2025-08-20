@@ -17,3 +17,4 @@ try {
 } catch (error) {
   console.error('❌ Failed to import Firebase:', error);
 }
+
