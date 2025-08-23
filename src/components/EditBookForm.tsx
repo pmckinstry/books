@@ -55,7 +55,7 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
           publication_date: bookData.publication_date || ''
         });
         setGenres(genresRes.genres || []);
-        setSelectedGenres((bookData.genres || []).map((g: any) => g.id));
+        setSelectedGenres((bookData.genres || []).map((g: {id: number}) => g.id));
       } catch (error) {
         console.error('Error fetching book or genres:', error);
         setErrors({ fetch: 'Failed to load book or genres' });

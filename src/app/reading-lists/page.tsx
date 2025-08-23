@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ReadingList } from '@/lib/database';
 import ReadingListCard from '@/components/ReadingListCard';
@@ -33,7 +33,7 @@ export default function ReadingListsPage() {
     }
   };
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     setError('');
 
@@ -45,16 +45,16 @@ export default function ReadingListsPage() {
 
       setReadingLists(userLists);
       setPublicLists(publicListsData);
-    } catch (error) {
+    } catch {
       setError('Failed to load reading lists');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   const handleDelete = (deletedId: number) => {
     setReadingLists(prev => prev.filter(list => list.id !== deletedId));

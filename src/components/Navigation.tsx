@@ -1,13 +1,13 @@
 'use client';
 
 import Link from "next/link";
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { getCurrentUser, removeCurrentUser, clearStaleUserData, forceClearAllAuthData, debugAuthState } from '@/lib/auth';
+import { getCurrentUser, removeCurrentUser, clearStaleUserData } from '@/lib/auth';
 
 export default function Navigation() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  // const router = useRouter();
+  const [user, setUser] = useState<ReturnType<typeof getCurrentUser>>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -105,21 +105,21 @@ export default function Navigation() {
     }
   };
 
-  const handleRefreshAuth = () => {
-    clearStaleUserData();
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
-  };
+  // const handleRefreshAuth = () => {
+  //   clearStaleUserData();
+  //   const currentUser = getCurrentUser();
+  //   setUser(currentUser);
+  // };
 
-  const handleForceClearAuth = () => {
-    forceClearAllAuthData();
-    setUser(null);
-    window.location.reload();
-  };
+  // const handleForceClearAuth = () => {
+  //   forceClearAllAuthData();
+  //   setUser(null);
+  //   window.location.reload();
+  // };
 
-  const handleDebugAuth = () => {
-    debugAuthState();
-  };
+  // const handleDebugAuth = () => {
+  //   debugAuthState();
+  // };
 
   if (isLoading) {
     return (

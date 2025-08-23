@@ -71,7 +71,7 @@ describe('/api/reading-lists/[id]', () => {
 
       mockReadingListOperations.getByIdWithBooks.mockReturnValue(mockReadingList);
 
-      const response = await GET(request, { params });
+      await GET(request, { params });
 
       expect(mockReadingListOperations.getByIdWithBooks).toHaveBeenCalledWith(1);
       expect(mockNextResponse.json).toHaveBeenCalledWith({ readingList: mockReadingList });
@@ -83,7 +83,7 @@ describe('/api/reading-lists/[id]', () => {
 
       mockReadingListOperations.getByIdWithBooks.mockReturnValue(null);
 
-      const response = await GET(request, { params });
+      await GET(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Reading list not found' },
@@ -95,7 +95,7 @@ describe('/api/reading-lists/[id]', () => {
       const request = new NextRequest('http://localhost:3000/api/reading-lists/invalid');
       const params = Promise.resolve({ id: 'invalid' });
 
-      const response = await GET(request, { params });
+      await GET(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid reading list ID' },
@@ -111,7 +111,7 @@ describe('/api/reading-lists/[id]', () => {
         throw new Error('Database error');
       });
 
-      const response = await GET(request, { params });
+      await GET(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Internal server error' },
@@ -151,7 +151,7 @@ describe('/api/reading-lists/[id]', () => {
       mockReadingListOperations.getById.mockReturnValue(mockReadingList);
       mockReadingListOperations.update.mockReturnValue(mockReadingList);
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockReadingListOperations.update).toHaveBeenCalledWith(1, {
         name: 'Updated Reading List',
@@ -175,7 +175,7 @@ describe('/api/reading-lists/[id]', () => {
       });
       const params = Promise.resolve({ id: '1' });
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Unauthorized' },
@@ -200,7 +200,7 @@ describe('/api/reading-lists/[id]', () => {
 
       mockReadingListOperations.getById.mockReturnValue(null);
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Reading list not found' },
@@ -223,7 +223,7 @@ describe('/api/reading-lists/[id]', () => {
       });
       const params = Promise.resolve({ id: 'invalid' });
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid reading list ID' },
@@ -258,7 +258,7 @@ describe('/api/reading-lists/[id]', () => {
 
       mockReadingListOperations.getById.mockReturnValue(mockReadingList);
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Forbidden' },
@@ -296,7 +296,7 @@ describe('/api/reading-lists/[id]', () => {
         throw new Error('Database error');
       });
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Internal server error' },
@@ -328,7 +328,7 @@ describe('/api/reading-lists/[id]', () => {
       mockReadingListOperations.getById.mockReturnValue(mockReadingList);
       mockReadingListOperations.delete.mockReturnValue(true);
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockReadingListOperations.delete).toHaveBeenCalledWith(1);
       expect(mockNextResponse.json).toHaveBeenCalledWith(
@@ -342,7 +342,7 @@ describe('/api/reading-lists/[id]', () => {
       });
       const params = Promise.resolve({ id: '1' });
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Unauthorized' },
@@ -361,7 +361,7 @@ describe('/api/reading-lists/[id]', () => {
 
       mockReadingListOperations.getById.mockReturnValue(null);
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Reading list not found' },
@@ -378,7 +378,7 @@ describe('/api/reading-lists/[id]', () => {
       });
       const params = Promise.resolve({ id: 'invalid' });
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid reading list ID' },
@@ -407,7 +407,7 @@ describe('/api/reading-lists/[id]', () => {
 
       mockReadingListOperations.getById.mockReturnValue(mockReadingList);
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Forbidden' },
@@ -439,7 +439,7 @@ describe('/api/reading-lists/[id]', () => {
         throw new Error('Database error');
       });
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Internal server error' },

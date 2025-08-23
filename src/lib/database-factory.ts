@@ -60,5 +60,5 @@ export type {
 
 // Export the database instance for direct access if needed
 export const getDatabase = config.database === 'dynamodb' 
-  ? () => require('./dynamodb').docClient 
+  ? async () => (await import('./dynamodb')).docClient 
   : SQLiteDB.getDatabase;

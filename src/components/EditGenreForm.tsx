@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -23,11 +23,7 @@ export default function EditGenreForm({ genreId }: EditGenreFormProps) {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    fetchGenre();
-  }, [genreId]);
-
-  const fetchGenre = async () => {
+  const fetchGenre = useCallback(async () => {
     try {
       const response = await fetch(`/api/genres/${genreId}`);
       if (!response.ok) {
@@ -42,7 +38,11 @@ export default function EditGenreForm({ genreId }: EditGenreFormProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [genreId]);
+
+  useEffect(() => {
+    fetchGenre();
+  }, [fetchGenre]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

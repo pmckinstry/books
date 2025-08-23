@@ -28,12 +28,10 @@ vi.mock('next/server', async () => {
   };
 });
 
-import { userBookAssociationOperations, userOperations, bookOperations } from '@/lib/database';
+import { userBookAssociationOperations } from '@/lib/database';
 import { NextResponse } from 'next/server';
 
 const mockUserBookAssociationOperations = vi.mocked(userBookAssociationOperations);
-const mockUserOperations = vi.mocked(userOperations);
-const mockBookOperations = vi.mocked(bookOperations);
 const mockNextResponse = vi.mocked(NextResponse);
 
 describe('/api/user-books/[bookId]', () => {
@@ -59,7 +57,7 @@ describe('/api/user-books/[bookId]', () => {
 
       mockUserBookAssociationOperations.getByUserAndBook.mockReturnValue(mockAssociation);
 
-      const response = await GET(request, { params });
+      await GET(request, { params });
 
       expect(mockUserBookAssociationOperations.getByUserAndBook).toHaveBeenCalledWith(1, 1);
       expect(mockNextResponse.json).toHaveBeenCalledWith(mockAssociation);
@@ -71,7 +69,7 @@ describe('/api/user-books/[bookId]', () => {
 
       mockUserBookAssociationOperations.getByUserAndBook.mockReturnValue(null);
 
-      const response = await GET(request, { params });
+      await GET(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Association not found' },
@@ -83,7 +81,7 @@ describe('/api/user-books/[bookId]', () => {
       const request = new NextRequest('http://localhost:3000/api/user-books/1');
       const params = Promise.resolve({ bookId: '1' });
 
-      const response = await GET(request, { params });
+      await GET(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'User ID is required' },
@@ -95,7 +93,7 @@ describe('/api/user-books/[bookId]', () => {
       const request = new NextRequest('http://localhost:3000/api/user-books/1?userId=invalid');
       const params = Promise.resolve({ bookId: '1' });
 
-      const response = await GET(request, { params });
+      await GET(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid user ID' },
@@ -107,7 +105,7 @@ describe('/api/user-books/[bookId]', () => {
       const request = new NextRequest('http://localhost:3000/api/user-books/invalid?userId=1');
       const params = Promise.resolve({ bookId: 'invalid' });
 
-      const response = await GET(request, { params });
+      await GET(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid book ID' },
@@ -123,7 +121,7 @@ describe('/api/user-books/[bookId]', () => {
         throw new Error('Database error');
       });
 
-      const response = await GET(request, { params });
+      await GET(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Failed to fetch user-book association' },
@@ -163,7 +161,7 @@ describe('/api/user-books/[bookId]', () => {
 
       mockUserBookAssociationOperations.update.mockReturnValue(mockAssociation);
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockUserBookAssociationOperations.update).toHaveBeenCalledWith(1, 1, {
         read_status: 'read' as const,
@@ -187,7 +185,7 @@ describe('/api/user-books/[bookId]', () => {
       });
       const params = Promise.resolve({ bookId: '1' });
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'User ID is required' },
@@ -210,7 +208,7 @@ describe('/api/user-books/[bookId]', () => {
       });
       const params = Promise.resolve({ bookId: '1' });
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid user ID' },
@@ -233,7 +231,7 @@ describe('/api/user-books/[bookId]', () => {
       });
       const params = Promise.resolve({ bookId: 'invalid' });
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid book ID' },
@@ -256,7 +254,7 @@ describe('/api/user-books/[bookId]', () => {
       });
       const params = Promise.resolve({ bookId: '1' });
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Read status must be one of: unread, reading, read' },
@@ -279,7 +277,7 @@ describe('/api/user-books/[bookId]', () => {
       });
       const params = Promise.resolve({ bookId: '1' });
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Rating must be a number between 1 and 5' },
@@ -304,7 +302,7 @@ describe('/api/user-books/[bookId]', () => {
 
       mockUserBookAssociationOperations.update.mockReturnValue(null);
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Association not found' },
@@ -331,7 +329,7 @@ describe('/api/user-books/[bookId]', () => {
         throw new Error('Database error');
       });
 
-      const response = await PUT(request, { params });
+      await PUT(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Failed to update user-book association' },
@@ -349,7 +347,7 @@ describe('/api/user-books/[bookId]', () => {
 
       mockUserBookAssociationOperations.delete.mockReturnValue(true);
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockUserBookAssociationOperations.delete).toHaveBeenCalledWith(1, 1);
       expect(mockNextResponse.json).toHaveBeenCalledWith(
@@ -365,7 +363,7 @@ describe('/api/user-books/[bookId]', () => {
 
       mockUserBookAssociationOperations.delete.mockReturnValue(false);
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Association not found' },
@@ -379,7 +377,7 @@ describe('/api/user-books/[bookId]', () => {
       });
       const params = Promise.resolve({ bookId: '1' });
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'User ID is required' },
@@ -393,7 +391,7 @@ describe('/api/user-books/[bookId]', () => {
       });
       const params = Promise.resolve({ bookId: '1' });
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid user ID' },
@@ -407,7 +405,7 @@ describe('/api/user-books/[bookId]', () => {
       });
       const params = Promise.resolve({ bookId: 'invalid' });
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid book ID' },
@@ -425,7 +423,7 @@ describe('/api/user-books/[bookId]', () => {
         throw new Error('Database error');
       });
 
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Failed to delete user-book association' },

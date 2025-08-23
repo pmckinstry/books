@@ -7,7 +7,7 @@ import { getCurrentUser } from '@/lib/auth';
 
 export default function Home() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<ReturnType<typeof getCurrentUser>>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [shouldRedirect, setShouldRedirect] = useState(false);
 

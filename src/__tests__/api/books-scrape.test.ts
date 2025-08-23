@@ -69,10 +69,11 @@ describe('/api/books/scrape', () => {
         body: JSON.stringify({})
       });
 
-      const response = await POST(request) as any;
+      const response = await POST(request);
       
       expect(response.status).toBe(400);
-      expect(response.data).toEqual({ error: 'URL is required' });
+      const data = await response.json();
+      expect(data).toEqual({ error: 'URL is required' });
     });
 
     it('should return 400 if URL is invalid', async () => {
@@ -81,24 +82,26 @@ describe('/api/books/scrape', () => {
         body: JSON.stringify({ url: 'invalid-url' })
       });
 
-      const response = await POST(request) as any;
+      const response = await POST(request);
       
       expect(response.status).toBe(400);
-      expect(response.data).toEqual({ error: 'Invalid URL format' });
+      const data = await response.json();
+      expect(data).toEqual({ error: 'Invalid URL format' });
     });
 
     it('should return 400 if scraping fails', async () => {
-      (mockAxios.get as any).mockRejectedValue(new Error('Network error'));
+      mockAxios.get.mockRejectedValue(new Error('Network error'));
 
       const request = new NextRequest('http://localhost:3000/api/books/scrape', {
         method: 'POST',
         body: JSON.stringify({ url: 'https://goodreads.com/book/show/123' })
       });
 
-      const response = await POST(request) as any;
+      const response = await POST(request);
       
       expect(response.status).toBe(400);
-      expect(response.data).toEqual({ 
+      const data = await response.json();
+      expect(data).toEqual({ 
         error: 'Could not extract book information from the provided URL. Please try a different URL or manually enter the book details.' 
       });
     });
@@ -106,7 +109,7 @@ describe('/api/books/scrape', () => {
     it('should return 400 if no book data extracted', async () => {
       // Override cheerio mock to return empty strings
       const cheerio = await import('cheerio');
-      (cheerio.load as any).mockImplementation(() => {
+      (cheerio.load as jest.MockedFunction<typeof cheerio.load>).mockImplementation(() => {
         return () => ({
           text: () => '',
           attr: () => '',
@@ -114,7 +117,7 @@ describe('/api/books/scrape', () => {
         });
       });
 
-      (mockAxios.get as any).mockResolvedValue({
+      mockAxios.get.mockResolvedValue({
         data: '<html></html>',
         status: 200
       });
@@ -124,10 +127,11 @@ describe('/api/books/scrape', () => {
         body: JSON.stringify({ url: 'https://www.goodreads.com/book/show/empty' })
       });
       
-      const response = await POST(request) as any;
+      const response = await POST(request);
       
       expect(response.status).toBe(400);
-      expect(response.data).toEqual({ 
+      const data = await response.json();
+      expect(data).toEqual({ 
         error: 'Could not extract book information from the provided URL. Please try a different URL or manually enter the book details.' 
       });
     });
@@ -135,7 +139,7 @@ describe('/api/books/scrape', () => {
     it('should return 200 with scraped book data for successful scraping', async () => {
       // Reset cheerio mock to return expected values
       const cheerio = await import('cheerio');
-      (cheerio.load as any).mockImplementation(() => {
+      (cheerio.load as jest.MockedFunction<typeof cheerio.load>).mockImplementation(() => {
         return (selector: string) => ({
           text: () => {
             if (selector.includes('bookTitle')) return 'The Great Gatsby';
@@ -179,7 +183,7 @@ describe('/api/books/scrape', () => {
         </html>
       `;
 
-      (mockAxios.get as any).mockResolvedValue({
+      mockAxios.get.mockResolvedValue({
         data: mockHtml,
         status: 200
       });
@@ -189,28 +193,30 @@ describe('/api/books/scrape', () => {
         body: JSON.stringify({ url: 'https://www.goodreads.com/book/show/4671.The_Great_Gatsby' })
       });
       
-      const response = await POST(request) as any;
+      const response = await POST(request);
       
       expect(response.status).toBe(200);
-      expect(response.data).toHaveProperty('bookData');
-      expect(response.data.bookData).toHaveProperty('title');
-      expect(response.data.bookData).toHaveProperty('author');
-      expect(response.data.bookData.title).toBe('The Great Gatsby');
-      expect(response.data.bookData.author).toBe('F. Scott Fitzgerald');
+      const data = await response.json();
+      expect(data).toHaveProperty('bookData');
+      expect(data.bookData).toHaveProperty('title');
+      expect(data.bookData).toHaveProperty('author');
+      expect(data.bookData.title).toBe('The Great Gatsby');
+      expect(data.bookData.author).toBe('F. Scott Fitzgerald');
     });
 
     it('should handle network errors gracefully', async () => {
-      (mockAxios.get as any).mockRejectedValue(new Error('Network error'));
+      mockAxios.get.mockRejectedValue(new Error('Network error'));
 
       const request = new NextRequest('http://localhost:3000/api/books/scrape', {
         method: 'POST',
         body: JSON.stringify({ url: 'https://goodreads.com/book/show/123' })
       });
 
-      const response = await POST(request) as any;
+      const response = await POST(request);
       
       expect(response.status).toBe(400);
-      expect(response.data).toEqual({ 
+      const data = await response.json();
+      expect(data).toEqual({ 
         error: 'Could not extract book information from the provided URL. Please try a different URL or manually enter the book details.' 
       });
     });

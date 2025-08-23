@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
@@ -44,11 +44,7 @@ export default function ReadBooksList() {
     setCurrentPage(page);
   }, [page]);
 
-  useEffect(() => {
-    fetchReadBooks();
-  }, [currentPage, searchTerm, sortBy, sortOrder]);
-
-  const fetchReadBooks = async () => {
+  const fetchReadBooks = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -88,7 +84,11 @@ export default function ReadBooksList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm, sortBy, sortOrder, limit]);
+
+  useEffect(() => {
+    fetchReadBooks();
+  }, [fetchReadBooks]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,7 +160,7 @@ export default function ReadBooksList() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Books I've Read</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Books I&apos;ve Read</h1>
           <p className="mt-2 text-gray-600">
             Your personal reading history ({totalBooks} books)
           </p>

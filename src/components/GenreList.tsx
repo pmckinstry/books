@@ -232,7 +232,7 @@ export default function GenreList() {
                           const response = await fetch(`/api/genres/${genre.id}`, { method: 'DELETE' });
                           if (!response.ok) throw new Error('Failed to delete genre');
                           setGenres(genres.filter(g => g.id !== genre.id));
-                        } catch (err) {
+                        } catch {
                           alert('Failed to delete genre.');
                         }
                       }}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { getCurrentUser, getCurrentUserId, debugAuthState, clearStaleUserData, forceClearAllAuthData } from '@/lib/auth';
 
 export default function AuthDebugger() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<ReturnType<typeof getCurrentUser>>(null);
   const [userId, setUserId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [localStorageData, setLocalStorageData] = useState<string>('');

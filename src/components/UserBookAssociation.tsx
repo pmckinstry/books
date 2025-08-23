@@ -9,7 +9,7 @@ interface UserBookAssociationProps {
   initialAssociation?: DBUserBookAssociation | null;
 }
 
-export default function UserBookAssociation({ bookId, initialAssociation }: UserBookAssociationProps) {
+export default function UserBookAssociation({ bookId }: UserBookAssociationProps) {
   const [association, setAssociation] = useState<DBUserBookAssociation | null>(null);
   const [readStatus, setReadStatus] = useState<'unread' | 'reading' | 'read'>('unread');
   const [rating, setRating] = useState<number>(0);

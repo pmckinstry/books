@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -19,14 +19,10 @@ export default function GenreView({ genreId }: GenreViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
-  const [books, setBooks] = useState<any[]>([]);
+  const [books, setBooks] = useState<Array<{id: number; title: string; author: string}>>([]);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchGenre();
-  }, [genreId]);
-
-  const fetchGenre = async () => {
+  const fetchGenre = useCallback(async () => {
     try {
       const response = await fetch(`/api/genres/${genreId}`);
       if (!response.ok) {
@@ -40,7 +36,11 @@ export default function GenreView({ genreId }: GenreViewProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [genreId]);
+
+  useEffect(() => {
+    fetchGenre();
+  }, [fetchGenre]);
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this genre? This action cannot be undone.')) {

@@ -26,8 +26,8 @@ export async function GET() {
     
     return NextResponse.json({
       success: false,
-      error: (error as any).message,
-      code: (error as any).code
+      error: (error as Error).message,
+      code: (error as { code?: string }).code
     }, { status: 500 });
   }
 }

@@ -1,12 +1,12 @@
-import Link from "next/link";
-import { bookOperations } from "@/lib/database";
-import Pagination from "@/components/Pagination";
-import AuthGuard from "@/components/AuthGuard";
-import BookTable from "@/components/BookTable";
-import BookSearch from "@/components/BookSearch";
+import Link from 'next/link';
+import AuthGuard from '@/components/AuthGuard';
+import BookSearch from '@/components/BookSearch';
+import BookTable from '@/components/BookTable';
+import BookSorting from '@/components/BookSorting';
+import Pagination from '@/components/Pagination';
+import { bookOperations } from '@/lib/database';
 
-// This is a Server Component that fetches data directly from the database
-async function getBooks(page: number = 1, sortBy: string = 'created_at', sortOrder: 'asc' | 'desc' = 'desc', search?: string) {
+async function getBooks(page: number, sortBy: string, sortOrder: 'asc' | 'desc', search: string) {
   try {
     const limit = 10; // Books per page
     return bookOperations.getPaginated(page, limit, sortBy, sortOrder, search);
@@ -14,37 +14,6 @@ async function getBooks(page: number = 1, sortBy: string = 'created_at', sortOrd
     console.error('Error fetching books:', error);
     return { books: [], total: 0, totalPages: 0 };
   }
-}
-
-function BooksListContent({
-  searchParams,
-}: {
-  searchParams: { page?: string };
-}) {
-  return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            All Books
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Manage your personal book collection
-          </p>
-        </div>
-        <Link 
-          href="/books/create"
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-        >
-          Add New Book
-        </Link>
-      </div>
-
-      <div className="text-center py-12">
-        <p className="text-gray-500 text-lg mb-4">Loading books...</p>
-      </div>
-    </div>
-  );
 }
 
 export default async function BooksListPage({
@@ -118,18 +87,29 @@ export default async function BooksListPage({
           </div>
         ) : (
           <>
+            <div className="mb-6">
+              <BookSorting 
+                currentSortBy={currentSortBy}
+                currentSortOrder={currentSortOrder}
+              />
+            </div>
+            
             <BookTable books={books} />
             
-            <Pagination 
-              currentPage={currentPage}
-              totalPages={totalPages}
-              baseUrl="/books"
-              searchParams={{ 
-                sortBy: currentSortBy, 
-                sortOrder: currentSortOrder,
-                ...(currentSearch && { search: currentSearch })
-              }}
-            />
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <Pagination 
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  baseUrl="/books"
+                  searchParams={{ 
+                    sortBy: currentSortBy, 
+                    sortOrder: currentSortOrder,
+                    ...(currentSearch && { search: currentSearch })
+                  }}
+                />
+              </div>
+            )}
           </>
         )}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 interface BookCoverImageProps {
   src: string;
@@ -20,9 +21,11 @@ export default function BookCoverImage({ src, alt, className = "w-32 h-48 object
   }
 
   return (
-    <img 
+    <Image 
       src={src} 
       alt={alt}
+      width={128}
+      height={192}
       className={className}
       onError={() => setImageError(true)}
     />

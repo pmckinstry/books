@@ -25,11 +25,10 @@ vi.mock('next/server', async () => {
   };
 });
 
-import { readingListOperations, bookOperations } from '@/lib/database';
+import { readingListOperations } from '@/lib/database';
 import { NextResponse } from 'next/server';
 
 const mockReadingListOperations = vi.mocked(readingListOperations);
-const mockBookOperations = vi.mocked(bookOperations);
 const mockNextResponse = vi.mocked(NextResponse);
 
 describe('/api/reading-lists/[id]/books', () => {
@@ -38,7 +37,7 @@ describe('/api/reading-lists/[id]/books', () => {
     mockNextResponse.json.mockImplementation((data, options) => ({
       status: options?.status || 200,
       data
-    } as any));
+    } as Response));
   });
 
   describe('POST /api/reading-lists/[id]/books', () => {
@@ -75,7 +74,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: '1' });
-      const response = await POST(request, { params });
+      await POST(request, { params });
 
       expect(mockReadingListOperations.addBook).toHaveBeenCalledWith({
         reading_list_id: 1,
@@ -104,7 +103,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: '999' });
-      const response = await POST(request, { params });
+      await POST(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Reading list not found' },
@@ -125,7 +124,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: 'invalid' });
-      const response = await POST(request, { params });
+      await POST(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid reading list ID' },
@@ -156,7 +155,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: '1' });
-      const response = await POST(request, { params });
+      await POST(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Valid book ID is required' },
@@ -187,7 +186,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: '1' });
-      const response = await POST(request, { params });
+      await POST(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Valid book ID is required' },
@@ -219,7 +218,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: '1' });
-      const response = await POST(request, { params });
+      await POST(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Failed to add book to reading list' },
@@ -253,7 +252,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: '1' });
-      const response = await POST(request, { params });
+      await POST(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Internal server error' },
@@ -283,7 +282,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: '1' });
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockReadingListOperations.removeBook).toHaveBeenCalledWith(1, 1);
       expect(mockNextResponse.json).toHaveBeenCalledWith(
@@ -302,7 +301,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: '999' });
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Reading list not found' },
@@ -319,7 +318,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: 'invalid' });
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid reading list ID' },
@@ -346,7 +345,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: '1' });
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Valid book ID is required' },
@@ -373,7 +372,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: '1' });
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Valid book ID is required' },
@@ -403,7 +402,7 @@ describe('/api/reading-lists/[id]/books', () => {
       });
 
       const params = Promise.resolve({ id: '1' });
-      const response = await DELETE(request, { params });
+      await DELETE(request, { params });
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Internal server error' },

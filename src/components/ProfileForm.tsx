@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 export default function ProfileForm() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<ReturnType<typeof getCurrentUser>>(null);
   const [formData, setFormData] = useState({
     nickname: ''
   });
@@ -199,7 +199,7 @@ export default function ProfileForm() {
               Your Reading Progress
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              View and manage the books you've read or are currently reading
+              View and manage the books you&apos;ve read or are currently reading
             </p>
             <Link
               href="/read"

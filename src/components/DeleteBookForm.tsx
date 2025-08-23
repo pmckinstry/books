@@ -104,7 +104,7 @@ export default function DeleteBookForm({ bookId }: DeleteBookFormProps) {
               Are you sure you want to delete this book?
             </h2>
             <p className="text-gray-600">
-              This action cannot be undone. The book "{book.title}" by {book.author} will be permanently removed.
+              This action cannot be undone. The book &quot;{book.title}&quot; by {book.author} will be permanently removed.
             </p>
           </div>
 

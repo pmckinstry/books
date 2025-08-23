@@ -3,8 +3,7 @@ import { userOperations } from '@/lib/database';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user ID from cookies or authorization header
-    const cookieHeader = request.headers.get('cookie');
+    // Get user ID from authorization header
     const authHeader = request.headers.get('authorization');
     
     let userId: number | null = null;
@@ -39,6 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Return user data without password
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
     return NextResponse.json(userWithoutPassword);
   } catch (error) {

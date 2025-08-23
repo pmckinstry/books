@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ReadingList } from '@/lib/database';
+
 
 interface EditReadingListFormProps {
   readingListId: number;
@@ -37,7 +37,7 @@ export default function EditReadingListForm({ readingListId }: EditReadingListFo
         } else {
           setError('Failed to load reading list');
         }
-      } catch (error) {
+      } catch {
         setError('Failed to load reading list');
       } finally {
         setIsLoading(false);

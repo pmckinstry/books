@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         try {
           const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
           userId = decoded.userId;
-        } catch (e) {
+        } catch {
           // Invalid token
         }
       }

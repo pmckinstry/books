@@ -2,7 +2,14 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 
 // DynamoDB configuration
-const dynamoConfig: any = {
+const dynamoConfig: {
+  region: string;
+  endpoint?: string;
+  credentials?: {
+    accessKeyId: string;
+    secretAccessKey: string;
+  };
+} = {
   region: process.env.AWS_REGION || 'us-east-1'
 };
 

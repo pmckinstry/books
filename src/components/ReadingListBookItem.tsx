@@ -37,7 +37,7 @@ export default function ReadingListBookItem({ book, readingListId }: ReadingList
         const errorData = await response.json();
         alert(`Failed to remove book: ${errorData.error || 'Unknown error'}`);
       }
-    } catch (error) {
+    } catch {
       alert('Failed to remove book from reading list');
     } finally {
       setIsRemoving(false);

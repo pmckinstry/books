@@ -4,8 +4,7 @@ import {
   QueryCommand, 
   UpdateCommand, 
   DeleteCommand, 
-  ScanCommand,
-  BatchWriteCommand
+  ScanCommand
 } from '@aws-sdk/lib-dynamodb';
 import { docClient, TABLES } from './dynamodb';
 import bcrypt from 'bcryptjs';
@@ -274,9 +273,9 @@ export const userOperations = {
   // Update user profile
   updateProfile: async (userId: string, data: { nickname?: string }): Promise<User | null> => {
     try {
-      const updates: any = {};
-      const expressionAttributeNames: any = {};
-      const expressionAttributeValues: any = {};
+      const updates: Record<string, string> = {};
+      const expressionAttributeNames: Record<string, string> = {};
+      const expressionAttributeValues: Record<string, unknown> = {};
       
       if (data.nickname !== undefined) {
         updates['#nickname'] = data.nickname;
@@ -377,9 +376,9 @@ export const userBookAssociationOperations = {
   // Update an existing association
   update: async (userId: string, bookId: string, data: UpdateUserBookAssociationData): Promise<UserBookAssociation | null> => {
     try {
-      const updates: any = {};
-      const expressionAttributeNames: any = {};
-      const expressionAttributeValues: any = {};
+      const updates: Record<string, string> = {};
+      const expressionAttributeNames: Record<string, string> = {};
+      const expressionAttributeValues: Record<string, unknown> = {};
       
       if (data.read_status !== undefined) {
         updates['#read_status'] = data.read_status;
@@ -580,7 +579,7 @@ export const bookOperations = {
   },
 
   // Get genres for a book
-  getGenresForBook: async (bookId: string): Promise<Genre[]> => {
+  getGenresForBook: async (): Promise<Genre[]> => {
     try {
       // This would need a separate table or GSI for book-genre relationships
       // For now, return empty array

@@ -21,9 +21,7 @@ import { NextRequest } from 'next/server'
 import { GET, POST } from '@/app/api/reading-lists/route'
 import { readingListOperations } from '@/lib/database'
 import { 
-  mockReadingListOperations, 
   createMockReadingList,
-  createMockBook,
   createMockRequest, 
   createMockRequestWithAuth,
   resetDatabaseMocks 
@@ -68,7 +66,7 @@ describe('/api/reading-lists', () => {
       })
 
       const response = await GET(request)
-      const data = await response.json()
+      await response.json()
 
       expect(response.status).toBe(401)
       //expect(data.readingLists).toEqual(mockReadingLists)
@@ -76,7 +74,7 @@ describe('/api/reading-lists', () => {
     })
 
     it('should use default user ID when no authentication is provided', async () => {
-      const mockReadingLists: any[] = []
+      const mockReadingLists: unknown[] = []
       vi.mocked(readingListOperations.getByUser).mockReturnValue(mockReadingLists)
 
       const request = createMockRequest({
@@ -84,7 +82,7 @@ describe('/api/reading-lists', () => {
       }) as NextRequest
 
       const response = await GET(request)
-      const data = await response.json()
+      await response.json()
 
       expect(response.status).toBe(401)
       //expect(data.readingLists).toEqual(mockReadingLists)

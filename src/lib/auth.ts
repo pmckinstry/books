@@ -1,4 +1,4 @@
-import { User } from './database';
+
 
 export interface AuthUser {
   id: number;

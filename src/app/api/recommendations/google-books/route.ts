@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const GOOGLE_BOOKS_BASE_URL = 'https://www.googleapis.com/books/v1/volumes';
     
     // Try multiple search strategies to find similar books
-    let recommendations: GoogleBooksRecommendation[] = [];
+    const recommendations: GoogleBooksRecommendation[] = [];
     
     // Strategy 1: Search for other books by the same author (excluding the current book)
     if (author) {
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
           
           recommendations.push(...authorBooks);
         }
-      } catch (error) {
+      } catch {
         console.log('Author search failed, trying other strategies...');
       }
     }
@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
           
           recommendations.push(...genreBooks);
         }
-      } catch (error) {
+      } catch {
         console.log(`Genre search for ${genreQuery} failed`);
       }
     }
@@ -213,7 +213,7 @@ export async function GET(request: NextRequest) {
           
           recommendations.push(...broaderBooks);
         }
-      } catch (error) {
+      } catch {
         console.log('Broader search failed');
       }
     }

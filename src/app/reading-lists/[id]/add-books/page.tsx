@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BookWithGenres } from '@/lib/database';
 import AuthGuard from '@/components/AuthGuard';
@@ -16,14 +16,14 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
   const [readingListName, setReadingListName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [books, setBooks] = useState<BookWithGenres[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedBooks, setSelectedBooks] = useState<Set<number>>(new Set());
   const [isAddingBooks, setIsAddingBooks] = useState(false);
   const [booksInList, setBooksInList] = useState<Set<number>>(new Set());
-  const router = useRouter();
+  // const router = useRouter();
 
   useEffect(() => {
     const loadReadingList = async () => {
@@ -42,12 +42,12 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
           const data = await response.json();
           setReadingListName(data.readingList.name);
           // Store the books that are already in the list
-          const existingBookIds = new Set<number>(data.readingList.books.map((book: any) => Number(book.id)));
+          const existingBookIds = new Set<number>(data.readingList.books.map((book: {id: string | number}) => Number(book.id)));
           setBooksInList(existingBookIds);
         } else {
           setError('Failed to load reading list');
         }
-      } catch (error) {
+      } catch {
         setError('Failed to load reading list');
       }
     };
@@ -72,10 +72,10 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
         const data = await response.json();
         setBooks(data.books || []);
       } else {
-        const errorData = await response.json();
+        await response.json();
         setError('Failed to search books');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to search books');
     } finally {
       setIsSearching(false);
@@ -150,7 +150,7 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
       if (failedCount > 0) {
         setError(`Failed to add ${failedCount} book${failedCount > 1 ? 's' : ''}. They may already be in the list.`);
       }
-    } catch (error) {
+    } catch {
       setError('Failed to add books to reading list');
     } finally {
       setIsAddingBooks(false);
@@ -367,7 +367,7 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No books found</h3>
             <p className="text-gray-500">
-              Try adjusting your search terms or browse all books to find what you're looking for.
+              Try adjusting your search terms or browse all books to find what you&apos;re looking for.
             </p>
           </div>
         )}

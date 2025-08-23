@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 interface GoogleBooksRecommendation {
@@ -27,7 +28,7 @@ interface GoogleBooksRecommendationsProps {
 // Helper function to clean title and create search query
 const createSearchQuery = (title: string, author?: string): string => {
   // Remove common subtitle indicators and extra text
-  let cleanTitle = title
+  const cleanTitle = title
     .replace(/\s*[-–—]\s*.*$/, '') // Remove everything after dash/hyphen
     .replace(/\s*:\s*.*$/, '') // Remove everything after colon
     .replace(/\s*\([^)]*\)/g, '') // Remove parenthetical text
@@ -230,7 +231,7 @@ export default function GoogleBooksRecommendations({
               {/* Book Cover */}
               <div className="flex-shrink-0">
                 {rec.imageUrl ? (
-                  <img
+                  <Image
                     src={rec.imageUrl}
                     alt={`Cover of ${rec.title}`}
                     width={60}

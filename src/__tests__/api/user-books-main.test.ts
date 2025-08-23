@@ -31,8 +31,6 @@ import { userBookAssociationOperations, userOperations, bookOperations } from '@
 import { NextResponse } from 'next/server';
 
 const mockUserBookAssociationOperations = vi.mocked(userBookAssociationOperations);
-const mockUserOperations = vi.mocked(userOperations);
-const mockBookOperations = vi.mocked(bookOperations);
 const mockNextResponse = vi.mocked(NextResponse);
 
 describe('/api/user-books', () => {
@@ -78,10 +76,10 @@ describe('/api/user-books', () => {
         updated_at: '2023-01-01T00:00:00Z',
       };
 
-      mockUserOperations.getById.mockReturnValue(mockUser);
+      vi.mocked(userOperations.getById).mockReturnValue(mockUser);
       mockUserBookAssociationOperations.getBooksWithUserAssociations.mockReturnValue(mockResult);
 
-      const response = await GET(request);
+      await GET(request);
 
       expect(mockUserBookAssociationOperations.getBooksWithUserAssociations).toHaveBeenCalledWith(1, 1, 10);
       expect(mockNextResponse.json).toHaveBeenCalledWith(mockResult);
@@ -90,7 +88,7 @@ describe('/api/user-books', () => {
     it('should return 400 for missing userId', async () => {
       const request = new NextRequest('http://localhost:3000/api/user-books');
 
-      const response = await GET(request);
+      await GET(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'User ID is required' },
@@ -101,7 +99,7 @@ describe('/api/user-books', () => {
     it('should return 400 for invalid userId', async () => {
       const request = new NextRequest('http://localhost:3000/api/user-books?userId=invalid');
 
-      const response = await GET(request);
+      await GET(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid user ID' },
@@ -112,9 +110,9 @@ describe('/api/user-books', () => {
     it('should return 404 for non-existent user', async () => {
       const request = new NextRequest('http://localhost:3000/api/user-books?userId=999');
 
-      mockUserOperations.getById.mockReturnValue(null);
+      vi.mocked(userOperations.getById).mockReturnValue(null);
 
-      const response = await GET(request);
+      await GET(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'User with ID 999 does not exist' },
@@ -133,9 +131,9 @@ describe('/api/user-books', () => {
         updated_at: '2023-01-01T00:00:00Z',
       };
 
-      mockUserOperations.getById.mockReturnValue(mockUser);
+      vi.mocked(userOperations.getById).mockReturnValue(mockUser);
 
-      const response = await GET(request);
+      await GET(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100.' },
@@ -154,12 +152,12 @@ describe('/api/user-books', () => {
         updated_at: '2023-01-01T00:00:00Z',
       };
 
-      mockUserOperations.getById.mockReturnValue(mockUser);
+      vi.mocked(userOperations.getById).mockReturnValue(mockUser);
       mockUserBookAssociationOperations.getBooksWithUserAssociations.mockImplementation(() => {
         throw new Error('Database error');
       });
 
-      const response = await GET(request);
+      await GET(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Failed to fetch user books' },
@@ -215,11 +213,11 @@ describe('/api/user-books', () => {
         updated_at: '2023-01-01T00:00:00Z',
       };
 
-      mockUserOperations.getById.mockReturnValue(mockUser);
-      mockBookOperations.getById.mockReturnValue(mockBook);
+      vi.mocked(userOperations.getById).mockReturnValue(mockUser);
+      vi.mocked(bookOperations.getById).mockReturnValue(mockBook);
       mockUserBookAssociationOperations.upsert.mockReturnValue(mockAssociation);
 
-      const response = await POST(request);
+      await POST(request);
 
       expect(mockUserBookAssociationOperations.upsert).toHaveBeenCalledWith({
         user_id: 1,
@@ -245,7 +243,7 @@ describe('/api/user-books', () => {
         },
       });
 
-      const response = await POST(request);
+      await POST(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'User ID and Book ID are required' },
@@ -267,7 +265,7 @@ describe('/api/user-books', () => {
         },
       });
 
-      const response = await POST(request);
+      await POST(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'User ID and Book ID are required' },
@@ -289,7 +287,7 @@ describe('/api/user-books', () => {
         },
       });
 
-      const response = await POST(request);
+      await POST(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'User ID must be a valid positive number' },
@@ -311,7 +309,7 @@ describe('/api/user-books', () => {
         },
       });
 
-      const response = await POST(request);
+      await POST(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Book ID must be a valid positive number' },
@@ -333,9 +331,9 @@ describe('/api/user-books', () => {
         },
       });
 
-      mockUserOperations.getById.mockReturnValue(null);
+      vi.mocked(userOperations.getById).mockReturnValue(null);
 
-      const response = await POST(request);
+      await POST(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'User with ID 999 does not exist' },
@@ -365,10 +363,10 @@ describe('/api/user-books', () => {
         updated_at: '2023-01-01T00:00:00Z',
       };
 
-      mockUserOperations.getById.mockReturnValue(mockUser);
-      mockBookOperations.getById.mockReturnValue(null);
+      vi.mocked(userOperations.getById).mockReturnValue(mockUser);
+      vi.mocked(bookOperations.getById).mockReturnValue(null);
 
-      const response = await POST(request);
+      await POST(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Book with ID 999 does not exist' },
@@ -409,10 +407,10 @@ describe('/api/user-books', () => {
         genres: [],
       };
 
-      mockUserOperations.getById.mockReturnValue(mockUser);
-      mockBookOperations.getById.mockReturnValue(mockBook);
+      vi.mocked(userOperations.getById).mockReturnValue(mockUser);
+      vi.mocked(bookOperations.getById).mockReturnValue(mockBook);
 
-      const response = await POST(request);
+      await POST(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Read status must be one of: unread, reading, read' },
@@ -453,10 +451,10 @@ describe('/api/user-books', () => {
         genres: [],
       };
 
-      mockUserOperations.getById.mockReturnValue(mockUser);
-      mockBookOperations.getById.mockReturnValue(mockBook);
+      vi.mocked(userOperations.getById).mockReturnValue(mockUser);
+      vi.mocked(bookOperations.getById).mockReturnValue(mockBook);
 
-      const response = await POST(request);
+      await POST(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Rating must be a number between 1 and 5' },
@@ -497,13 +495,13 @@ describe('/api/user-books', () => {
         genres: [],
       };
 
-      mockUserOperations.getById.mockReturnValue(mockUser);
-      mockBookOperations.getById.mockReturnValue(mockBook);
+      vi.mocked(userOperations.getById).mockReturnValue(mockUser);
+      vi.mocked(bookOperations.getById).mockReturnValue(mockBook);
       mockUserBookAssociationOperations.upsert.mockImplementation(() => {
         throw new Error('Database error');
       });
 
-      const response = await POST(request);
+      await POST(request);
 
       expect(mockNextResponse.json).toHaveBeenCalledWith(
         { error: 'Failed to create user-book association' },

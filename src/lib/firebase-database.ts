@@ -5,7 +5,6 @@ import {
   getDoc, 
   addDoc, 
   updateDoc, 
-  deleteDoc, 
   query, 
   where, 
   orderBy, 
@@ -142,7 +141,7 @@ export interface AddBookToListData {
 }
 
 // Helper function to convert Firestore timestamp to string
-const timestampToString = (timestamp: any): string => {
+const timestampToString = (timestamp: Timestamp | { seconds: number; nanoseconds: number } | string): string => {
   if (timestamp instanceof Timestamp) {
     return timestamp.toDate().toISOString();
   }
@@ -233,7 +232,7 @@ export const userBookAssociationOperations = {
       if (!querySnapshot.empty) {
         // Update existing association
         const docRef = querySnapshot.docs[0].ref;
-        const updates: any = {
+        const updates: Partial<User> & { updated_at: ReturnType<typeof serverTimestamp> } = {
           updated_at: serverTimestamp()
         };
         

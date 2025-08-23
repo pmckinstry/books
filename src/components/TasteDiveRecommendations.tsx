@@ -24,7 +24,7 @@ interface TasteDiveRecommendationsProps {
 // Helper function to clean title and create search query
 const createSearchQuery = (title: string, author?: string): string => {
   // Remove common subtitle indicators and extra text
-  let cleanTitle = title
+  const cleanTitle = title
     .replace(/\s*[-–—]\s*.*$/, '') // Remove everything after dash/hyphen
     .replace(/\s*:\s*.*$/, '') // Remove everything after colon
     .replace(/\s*\([^)]*\)/g, '') // Remove parenthetical text

@@ -375,7 +375,7 @@ export const userOperations = {
   authenticate: async (data: LoginData): Promise<User | null> => {
     try {
       const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
-      const user = stmt.get(data.username) as any;
+      const user = stmt.get(data.username) as User | undefined;
       
       if (!user) return null;
       
@@ -424,7 +424,7 @@ export const userOperations = {
   updateProfile: async (userId: number, data: { nickname?: string }): Promise<User | null> => {
     try {
       const updates: string[] = [];
-      const values: any[] = [];
+      const values: (string | number | null)[] = [];
 
       if (data.nickname !== undefined) {
         updates.push('nickname = ?');
@@ -467,7 +467,7 @@ export const userBookAssociationOperations = {
         updated_at = CURRENT_TIMESTAMP
     `);
     
-    const result = stmt.run(
+    stmt.run(
       data.user_id, 
       data.book_id, 
       data.read_status || 'unread',
@@ -509,7 +509,7 @@ export const userBookAssociationOperations = {
   update: (userId: number, bookId: number, data: UpdateUserBookAssociationData): UserBookAssociation | null => {
     try {
       const updates: string[] = [];
-      const values: any[] = [];
+      const values: (string | number | null)[] = [];
 
       if (data.read_status !== undefined) {
         updates.push('read_status = ?');
@@ -575,7 +575,7 @@ export const userBookAssociationOperations = {
         LIMIT ? OFFSET ?
       `);
       
-      const results = stmt.all(userId, limit, offset) as any[];
+      const results = stmt.all(userId, limit, offset) as unknown[];
       
       const books = results.map(row => ({
         id: row.id,
@@ -624,7 +624,7 @@ export const userBookAssociationOperations = {
       }
       
       let whereClause = 'WHERE uba.user_id = ? AND uba.read_status = \'read\'';
-      let searchParams: any[] = [userId];
+      const searchParams: unknown[] = [userId];
       
       if (search && search.trim()) {
         const searchTerm = `%${search.trim()}%`;
@@ -667,7 +667,7 @@ export const userBookAssociationOperations = {
         LIMIT ? OFFSET ?
       `);
       
-      const results = stmt.all(...searchParams, limit, offset) as any[];
+      const results = stmt.all(...searchParams, limit, offset) as unknown[];
       
       const books = results.map(row => ({
         id: row.id,
@@ -725,7 +725,7 @@ export const bookOperations = {
     }
     
     let whereClause = '';
-    let searchParams: any[] = [];
+    let searchParams: (string | number | null)[] = [];
     
     if (search && search.trim()) {
       const searchTerm = `%${search.trim()}%`;
@@ -807,7 +807,7 @@ export const bookOperations = {
     if (!book) return null;
 
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | null)[] = [];
 
     if (data.title !== undefined) {
       updates.push('title = ?');
@@ -959,7 +959,7 @@ export const genreOperations = {
     if (!genre) return null;
 
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | null)[] = [];
 
     if (data.name !== undefined) {
       updates.push('name = ?');
@@ -1095,7 +1095,7 @@ export const readingListOperations = {
       ORDER BY rlb.position ASC, rlb.added_at ASC
     `);
     
-    const results = stmt.all(id) as any[];
+    const results = stmt.all(id) as unknown[];
     
     const books = results.map(row => ({
       id: row.book_id,
@@ -1148,7 +1148,7 @@ export const readingListOperations = {
     if (!readingList) return null;
 
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | null)[] = [];
 
     if (data.name !== undefined) {
       updates.push('name = ?');
@@ -1199,7 +1199,7 @@ export const readingListOperations = {
         INSERT INTO reading_list_books (reading_list_id, book_id, position, notes) 
         VALUES (?, ?, ?, ?)
       `);
-      const result = stmt.run(data.reading_list_id, data.book_id, data.position, data.notes || null);
+      stmt.run(data.reading_list_id, data.book_id, data.position, data.notes || null);
       
       return readingListOperations.getBookInList(data.reading_list_id, data.book_id);
     } catch (error) {
@@ -1225,7 +1225,7 @@ export const readingListOperations = {
   // Update a book in a reading list
   updateBookInList: (readingListId: number, bookId: number, data: UpdateBookInListData): ReadingListBook | null => {
     const updates: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | null)[] = [];
 
     if (data.position !== undefined) {
       updates.push('position = ?');

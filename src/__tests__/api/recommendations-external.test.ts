@@ -34,7 +34,7 @@ describe('/api/recommendations/external', () => {
   describe('GET /api/recommendations/google-books', () => {
     it('should return 400 if title is missing', async () => {
       const request = new NextRequest('http://localhost:3000/api/recommendations/google-books');
-      const response = await GoogleBooksGET(request) as any;
+      const response = await GoogleBooksGET(request) as { data: unknown; status: number };
       
       expect(response.status).toBe(400);
       expect(response.data).toEqual({ error: 'Book title is required' });
@@ -93,7 +93,7 @@ describe('/api/recommendations/external', () => {
       };
 
       // Mock axios to return different responses for different calls
-      (mockAxios.get as any)
+      (mockAxios.get as vi.Mock)
         .mockResolvedValueOnce(mockAuthorResponse)  // Author search
         .mockResolvedValueOnce(mockGenreResponse)   // First genre search
         .mockRejectedValueOnce(new Error('Genre search failed')) // Second genre search fails
@@ -101,7 +101,7 @@ describe('/api/recommendations/external', () => {
         .mockRejectedValueOnce(new Error('Genre search failed')); // Fourth genre search fails
 
       const request = new NextRequest('http://localhost:3000/api/recommendations/google-books?title=Test&author=Author&limit=5');
-      const response = await GoogleBooksGET(request) as any;
+      const response = await GoogleBooksGET(request) as { data: unknown; status: number };
       
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('recommendations');
@@ -111,16 +111,16 @@ describe('/api/recommendations/external', () => {
 
     it('should handle axios errors gracefully', async () => {
       // Mock all axios calls to fail with rate limit error
-      (mockAxios.get as any)
+      (mockAxios.get as vi.Mock)
         .mockRejectedValue({ response: { status: 429 } })
         .mockRejectedValue({ response: { status: 429 } })
         .mockRejectedValue({ response: { status: 429 } })
         .mockRejectedValue({ response: { status: 429 } })
         .mockRejectedValue({ response: { status: 429 } });
-      (mockAxios.isAxiosError as any).mockReturnValue(true);
+      (mockAxios.isAxiosError as vi.Mock).mockReturnValue(true);
 
       const request = new NextRequest('http://localhost:3000/api/recommendations/google-books?title=Test');
-      const response = await GoogleBooksGET(request) as any;
+      const response = await GoogleBooksGET(request) as { data: unknown; status: number };
       
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('recommendations');
@@ -130,16 +130,16 @@ describe('/api/recommendations/external', () => {
 
     it('should handle quota exceeded errors', async () => {
       // Mock all axios calls to fail with quota exceeded error
-      (mockAxios.get as any)
+      (mockAxios.get as vi.Mock)
         .mockRejectedValue({ response: { status: 403 } })
         .mockRejectedValue({ response: { status: 403 } })
         .mockRejectedValue({ response: { status: 403 } })
         .mockRejectedValue({ response: { status: 403 } })
         .mockRejectedValue({ response: { status: 403 } });
-      (mockAxios.isAxiosError as any).mockReturnValue(true);
+      (mockAxios.isAxiosError as vi.Mock).mockReturnValue(true);
 
       const request = new NextRequest('http://localhost:3000/api/recommendations/google-books?title=Test');
-      const response = await GoogleBooksGET(request) as any;
+      const response = await GoogleBooksGET(request) as { data: unknown; status: number };
       
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('recommendations');
@@ -149,16 +149,16 @@ describe('/api/recommendations/external', () => {
 
     it('should handle general errors', async () => {
       // Mock all axios calls to fail with general error
-      (mockAxios.get as any)
+      (mockAxios.get as vi.Mock)
         .mockRejectedValue(new Error('Network error'))
         .mockRejectedValue(new Error('Network error'))
         .mockRejectedValue(new Error('Network error'))
         .mockRejectedValue(new Error('Network error'))
         .mockRejectedValue(new Error('Network error'));
-      (mockAxios.isAxiosError as any).mockReturnValue(false);
+      (mockAxios.isAxiosError as vi.Mock).mockReturnValue(false);
 
       const request = new NextRequest('http://localhost:3000/api/recommendations/google-books?title=Test');
-      const response = await GoogleBooksGET(request) as any;
+      const response = await GoogleBooksGET(request) as { data: unknown; status: number };
       
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('recommendations');
@@ -170,7 +170,7 @@ describe('/api/recommendations/external', () => {
   describe('GET /api/recommendations/tastedive', () => {
     it('should return 400 if title is missing', async () => {
       const request = new NextRequest('http://localhost:3000/api/recommendations/tastedive');
-      const response = await TasteDiveGET(request) as any;
+      const response = await TasteDiveGET(request) as { data: unknown; status: number };
       
       expect(response.status).toBe(400);
       expect(response.data).toEqual({ error: 'Book title is required' });
@@ -205,10 +205,10 @@ describe('/api/recommendations/external', () => {
         }
       };
 
-      (mockAxios.get as any).mockResolvedValue(mockResponse);
+      (mockAxios.get as vi.Mock).mockResolvedValue(mockResponse);
 
       const request = new NextRequest('http://localhost:3000/api/recommendations/tastedive?title=Test&author=Author&limit=5');
-      const response = await TasteDiveGET(request) as any;
+      const response = await TasteDiveGET(request) as { data: unknown; status: number };
       
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('recommendations');
@@ -226,10 +226,10 @@ describe('/api/recommendations/external', () => {
         }
       };
 
-      (mockAxios.get as any).mockResolvedValue(mockResponse);
+      (mockAxios.get as vi.Mock).mockResolvedValue(mockResponse);
 
       const request = new NextRequest('http://localhost:3000/api/recommendations/tastedive?title=Test');
-      const response = await TasteDiveGET(request) as any;
+      const response = await TasteDiveGET(request) as { data: unknown; status: number };
       
       expect(response.status).toBe(200);
       expect(response.data).toEqual({
@@ -240,37 +240,37 @@ describe('/api/recommendations/external', () => {
     });
 
     it('should handle rate limit errors', async () => {
-      (mockAxios.get as any).mockRejectedValue({
+      (mockAxios.get as vi.Mock).mockRejectedValue({
         response: { status: 429 }
       });
-      (mockAxios.isAxiosError as any).mockReturnValue(true);
+      (mockAxios.isAxiosError as vi.Mock).mockReturnValue(true);
 
       const request = new NextRequest('http://localhost:3000/api/recommendations/tastedive?title=Test');
-      const response = await TasteDiveGET(request) as any;
+      const response = await TasteDiveGET(request) as { data: unknown; status: number };
       
       expect(response.status).toBe(429);
       expect(response.data).toEqual({ error: 'Rate limit exceeded. Please try again later.' });
     });
 
     it('should handle not found errors', async () => {
-      (mockAxios.get as any).mockRejectedValue({
+      (mockAxios.get as vi.Mock).mockRejectedValue({
         response: { status: 404 }
       });
-      (mockAxios.isAxiosError as any).mockReturnValue(true);
+      (mockAxios.isAxiosError as vi.Mock).mockReturnValue(true);
 
       const request = new NextRequest('http://localhost:3000/api/recommendations/tastedive?title=Test');
-      const response = await TasteDiveGET(request) as any;
+      const response = await TasteDiveGET(request) as { data: unknown; status: number };
       
       expect(response.status).toBe(404);
       expect(response.data).toEqual({ error: 'No recommendations found for this book' });
     });
 
     it('should handle general errors', async () => {
-      (mockAxios.get as any).mockRejectedValue(new Error('Network error'));
-      (mockAxios.isAxiosError as any).mockReturnValue(false);
+      (mockAxios.get as vi.Mock).mockRejectedValue(new Error('Network error'));
+      (mockAxios.isAxiosError as vi.Mock).mockReturnValue(false);
 
       const request = new NextRequest('http://localhost:3000/api/recommendations/tastedive?title=Test');
-      const response = await TasteDiveGET(request) as any;
+      const response = await TasteDiveGET(request) as { data: unknown; status: number };
       
       expect(response.status).toBe(500);
       expect(response.data).toEqual({ error: 'Failed to fetch recommendations from TasteDive' });

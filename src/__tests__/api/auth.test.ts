@@ -38,11 +38,8 @@ vi.mock('next/server', async () => {
 });
 
 import { userOperations } from '@/lib/database';
-import { hash, compare } from 'bcryptjs';
 
 const mockUserOperations = vi.mocked(userOperations, { shallow: false });
-const mockHash = vi.mocked(hash);
-const mockCompare = vi.mocked(compare);
 
 describe('/api/auth', () => {
   beforeEach(() => {
@@ -137,8 +134,7 @@ describe('/api/auth', () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
-      // Use any to avoid linter error for getUserById
-      (mockUserOperations as any).getUserById.mockReturnValue(mockUser);
+      mockUserOperations.getUserById.mockReturnValue(mockUser);
 
       // Create a proper Bearer token with base64-encoded JSON
       const tokenData = { userId: 1 };

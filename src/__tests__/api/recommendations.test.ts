@@ -43,9 +43,6 @@ import {
   readingListOperations 
 } from '@/lib/database'
 import { 
-  createMockBook, 
-  createMockUserBookAssociation,
-  createMockReadingList,
   createMockRequest, 
   createMockRequestWithAuth,
   resetDatabaseMocks 
@@ -76,7 +73,7 @@ vi.mock('next/server', async () => {
 
 import axios from 'axios';
 
-const mockAxios = vi.mocked(axios);
+vi.mocked(axios);
 
 describe('/api/recommendations', () => {
   beforeEach(() => {
@@ -408,7 +405,7 @@ describe('/api/recommendations', () => {
       const data = await response.json();
       expect(data).toHaveProperty('recommendations');
       // Should not recommend the book that's already in the reading list
-      const recommendedTitles = data.recommendations.map((r: any) => r.title);
+      const recommendedTitles = data.recommendations.map((r: { title: string }) => r.title);
       expect(recommendedTitles).not.toContain('The Great Gatsby');
     })
   })

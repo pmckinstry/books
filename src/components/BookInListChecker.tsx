@@ -29,7 +29,7 @@ export default function BookInListChecker({ readingListId, books, onBookStatusCh
 
         if (response.ok) {
           const data = await response.json();
-          const bookIdsInList = new Set<number>(data.readingList.books.map((book: any) => Number(book.id)));
+          const bookIdsInList = new Set<number>(data.readingList.books.map((book: {id: string | number}) => Number(book.id)));
           setBooksInList(bookIdsInList);
           
           // Notify parent component of book status changes

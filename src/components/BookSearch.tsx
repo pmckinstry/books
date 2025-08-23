@@ -66,7 +66,7 @@ export default function BookSearch() {
       </div>
       {searchTerm && (
         <p className="mt-2 text-sm text-gray-600">
-          Searching for: <span className="font-medium">"{searchTerm}"</span>
+          Searching for: <span className="font-medium">&quot;{searchTerm}&quot;</span>
         </p>
       )}
     </div>

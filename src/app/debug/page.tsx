@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { getCurrentUser, removeCurrentUser } from '@/lib/auth';
 
 export default function DebugPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<ReturnType<typeof getCurrentUser>>(null);
   const [localStorageData, setLocalStorageData] = useState<string>('');
 
   useEffect(() => {
@@ -12,13 +12,13 @@ export default function DebugPage() {
     setUser(currentUser);
     
     // Get all localStorage data
-    const allData: Record<string, any> = {};
+    const allData: Record<string, string | null> = {};
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key) {
         try {
           allData[key] = localStorage.getItem(key);
-        } catch (error) {
+        } catch {
           allData[key] = 'Error reading value';
         }
       }
