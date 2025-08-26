@@ -91,22 +91,36 @@ The database will be automatically initialized with sample books and genres on f
 ### **Technology Stack**
 - **Frontend**: Next.js 15.3.4 with React 19 and TypeScript
 - **Backend**: Next.js API Routes with RESTful design
-- **Database**: SQLite with better-sqlite3 for reliable local storage
+- **Database**: Multiple database options supported:
+  - **SQLite** with better-sqlite3 (default for local development)
+  - **DynamoDB** for AWS cloud deployments
+  - **Firebase Firestore** for Google cloud deployments
 - **Styling**: Tailwind CSS 4 for modern, responsive design
 - **Authentication**: Custom secure authentication with bcrypt
 - **Testing**: Vitest with comprehensive test coverage
 - **Development**: ESLint, TypeScript, and Turbopack for fast development
 
-### **Database Schema**
-The application uses a well-designed relational database with the following core tables:
+### **Database Options**
 
-- **`users`**: User accounts with secure password hashing and profiles
-- **`books`**: Comprehensive book information including ISBN, page count, cover images
-- **`genres`**: Categorization system with descriptions
-- **`user_book_associations`**: Reading progress, ratings, and personal comments
-- **`reading_lists`**: Custom book lists with public/private settings
-- **`book_genres`**: Many-to-many relationship between books and genres
-- **`reading_list_books`**: Books within reading lists with positioning and notes
+The application supports three database backends with a unified interface:
+
+- **SQLite** (default) - Zero configuration, perfect for development and small deployments
+- **DynamoDB** - AWS cloud solution for scalable production deployments  
+- **Firebase** - Google cloud solution with real-time synchronization
+
+**📊 [Complete Database Configuration Guide](docs/DATABASE.md)**
+
+#### **Quick Setup**
+```env
+# Choose your database (defaults to sqlite)
+DATABASE_TYPE=sqlite    # or dynamodb, firebase
+```
+
+The application uses a database abstraction layer that provides:
+- ✅ **Consistent API** across all database types
+- ✅ **Easy migration** between databases
+- ✅ **Type safety** with TypeScript interfaces
+- ✅ **Optimized performance** for each backend
 
 ### **API Design**
 RESTful API endpoints organized by resource:
@@ -212,10 +226,13 @@ books/
 
 Comprehensive documentation is available in the [`docs/`](docs/) directory:
 
+- **[Database Configuration](docs/DATABASE.md)**: Complete guide for SQLite, DynamoDB, and Firebase setup
+- **[API Reference](docs/API.md)**: Complete REST API documentation with examples
 - **[Design Document](docs/DESIGN.md)**: Complete technical architecture and design decisions
 - **[Requirements](docs/REQUIREMENTS.md)**: Detailed functional and non-functional requirements
 - **[Architecture Diagram](docs/architecture-diagram.md)**: System architecture overview
 - **[URL Scraping](docs/URL_SCRAPING.md)**: Book data extraction capabilities
+- **[Recommendations](docs/RECOMMENDATIONS.md)**: External API integration details
 
 ## 🚀 Deployment
 
@@ -237,131 +254,57 @@ npm run build
 npm start
 ```
 
-**Note**: Ensure your hosting environment supports:
+**Note**: Hosting requirements vary by database choice:
+
+#### **For SQLite deployments:**
 - Node.js 18+
 - File system access for SQLite database
 - Persistent storage for the `data/` directory
 
+#### **For DynamoDB deployments:**
+- Node.js 18+
+- AWS account with DynamoDB access
+- Proper IAM permissions configured
+
+#### **For Firebase deployments:**
+- Node.js 18+
+- Google Cloud/Firebase project
+- Service account credentials configured
+
 ## 🔧 Configuration
 
 ### **Environment Variables**
-Create a `.env.local` file for configuration:
+Create a `.env.local` file for basic configuration:
 
 ```env
-# Optional: Configure external API keys for recommendations
+# Database Selection (optional - defaults to sqlite)
+DATABASE_TYPE=sqlite
+
+# External API Keys (optional - for book recommendations)
 TASTEDIVE_API_KEY=your_tastedive_api_key
 GOOGLE_BOOKS_API_KEY=your_google_books_api_key
 ```
 
-### **Database Location**
-The SQLite database is stored in `data/books.db` and will be created automatically on first run.
+For database-specific configuration (AWS credentials for DynamoDB, Firebase service keys, etc.), see the [Database Configuration Guide](docs/DATABASE.md).
 
 ---
 
 ## 🔌 API Reference
 
-The application provides a comprehensive RESTful API. Here are some key endpoints:
+The Book Manager application provides a comprehensive RESTful API for all functionality including authentication, book management, reading progress tracking, genres, reading lists, and recommendations.
 
-### **Authentication**
-```bash
-# Register a new user
-POST /api/auth/register
-Content-Type: application/json
-{"username": "newuser", "password": "password123", "nickname": "My Nickname"}
+**📖 [Complete API Documentation](docs/API.md)**
 
-# Login
-POST /api/auth/login
-Content-Type: application/json
-{"username": "admin", "password": "admin123"}
+Key API features:
+- **RESTful Design**: Consistent HTTP methods and status codes
+- **JSON Responses**: All endpoints return structured JSON data
+- **Pagination**: Built-in pagination for large datasets
+- **Search & Filtering**: Advanced search capabilities across all resources
+- **Rate Limiting**: Protection against API abuse
+- **Error Handling**: Consistent error response format
+- **Multi-Database Support**: Works with SQLite, DynamoDB, and Firebase
 
-# Get user profile
-GET /api/auth/profile
-
-# Logout
-POST /api/auth/logout
-```
-
-### **Books**
-```bash
-# Get paginated books with search and sorting
-GET /api/books?page=1&limit=10&search=gatsby&sortBy=title&sortOrder=asc
-
-# Get specific book with genres
-GET /api/books/1
-
-# Create a new book
-POST /api/books
-Content-Type: application/json
-{
-  "title": "The Great Gatsby",
-  "author": "F. Scott Fitzgerald",
-  "isbn": "978-0743273565",
-  "page_count": 180,
-  "description": "A classic American novel",
-  "genres": [1, 2]
-}
-
-# Scrape book data from URL
-POST /api/books/scrape
-Content-Type: application/json
-{"url": "https://www.goodreads.com/book/show/4671.The_Great_Gatsby"}
-```
-
-### **Reading Progress**
-```bash
-# Get user's reading associations
-GET /api/user-books?page=1&limit=10&sortBy=updated_at&sortOrder=desc
-
-# Update reading status and rating
-POST /api/user-books
-Content-Type: application/json
-{
-  "book_id": 1,
-  "read_status": "read",
-  "rating": 5,
-  "comments": "Absolutely loved this book!"
-}
-
-# Get read books only
-GET /api/user-books/read?search=gatsby
-```
-
-### **Reading Lists**
-```bash
-# Get user's reading lists
-GET /api/reading-lists
-
-# Create a reading list
-POST /api/reading-lists
-Content-Type: application/json
-{
-  "name": "Summer Reading 2024",
-  "description": "Books to read this summer",
-  "is_public": false
-}
-
-# Add book to reading list
-POST /api/reading-lists/1/books
-Content-Type: application/json
-{"book_id": 5, "notes": "Recommended by friend"}
-```
-
-### **Recommendations**
-```bash
-# Get recommendations based on reading history
-GET /api/recommendations
-
-# Get TasteDive recommendations
-GET /api/recommendations/tastedive?query=science+fiction
-
-# Get Google Books recommendations
-GET /api/recommendations/google-books?query=fantasy+novels
-
-# Get recommendations for a reading list
-GET /api/recommendations/reading-list/1
-```
-
-For complete API documentation, see the [`src/app/api/`](src/app/api/) directory.
+For interactive testing and development, the API routes are also documented in the [`src/app/api/`](src/app/api/) directory.
 
 ## 🤝 Contributing
 
