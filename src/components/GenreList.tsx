@@ -4,15 +4,15 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import GenreSearch from './GenreSearch';
+import { Genre } from '@/lib/database-factory';
 
-interface Genre {
-  id: number;
-  name: string;
-  description?: string;
+// Extended Genre type with book count
+interface GenreWithCount extends Genre {
+  bookCount?: number;
 }
 
 export default function GenreList() {
-  const [genres, setGenres] = useState<Genre[]>([]);
+  const [genres, setGenres] = useState<GenreWithCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -82,7 +82,7 @@ export default function GenreList() {
     }
   };
 
-  const filterGenres = (genres: Genre[]) => {
+  const filterGenres = (genres: GenreWithCount[]) => {
     const searchTerm = searchParams.get('search') || '';
     
     if (!searchTerm.trim()) {
@@ -96,26 +96,38 @@ export default function GenreList() {
     );
   };
 
-  const sortGenres = (genres: Genre[]) => {
+  const sortGenres = (genres: GenreWithCount[]) => {
     const currentSortBy = searchParams.get('sortBy') || 'name';
     const currentSortOrder = searchParams.get('sortOrder') || 'asc';
     
     return [...genres].sort((a, b) => {
-      let aValue = a[currentSortBy as keyof Genre];
-      let bValue = b[currentSortBy as keyof Genre];
+      let aValue: any;
+      let bValue: any;
       
-      // Handle undefined values
-      if (aValue === undefined) aValue = '';
-      if (bValue === undefined) bValue = '';
-      
-      // Convert to string for comparison
-      const aStr = String(aValue).toLowerCase();
-      const bStr = String(bValue).toLowerCase();
-      
-      if (currentSortOrder === 'asc') {
-        return aStr.localeCompare(bStr);
+      // Handle different sort fields
+      if (currentSortBy === 'bookCount') {
+        aValue = a.bookCount || 0;
+        bValue = b.bookCount || 0;
+        
+        // Numeric comparison for book count
+        if (currentSortOrder === 'asc') {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        }
       } else {
-        return bStr.localeCompare(aStr);
+        // String comparison for other fields
+        aValue = a[currentSortBy as keyof Genre] || '';
+        bValue = b[currentSortBy as keyof Genre] || '';
+        
+        const aStr = String(aValue).toLowerCase();
+        const bStr = String(bValue).toLowerCase();
+        
+        if (currentSortOrder === 'asc') {
+          return aStr.localeCompare(bStr);
+        } else {
+          return bStr.localeCompare(aStr);
+        }
       }
     });
   };
@@ -190,12 +202,21 @@ export default function GenreList() {
       ) : (
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
-            <div 
-              className="flex items-center space-x-1 cursor-pointer hover:bg-gray-100 transition-colors px-2 py-1 rounded"
-              onClick={() => handleSort('name')}
-            >
-              <span className="text-sm font-medium text-gray-700 uppercase tracking-wider">Genre Name</span>
-              {getSortIcon('name')}
+            <div className="flex items-center space-x-8">
+              <div 
+                className="flex items-center space-x-1 cursor-pointer hover:bg-gray-100 transition-colors px-2 py-1 rounded"
+                onClick={() => handleSort('name')}
+              >
+                <span className="text-sm font-medium text-gray-700 uppercase tracking-wider">Genre Name</span>
+                {getSortIcon('name')}
+              </div>
+              <div 
+                className="flex items-center space-x-1 cursor-pointer hover:bg-gray-100 transition-colors px-2 py-1 rounded"
+                onClick={() => handleSort('bookCount')}
+              >
+                <span className="text-sm font-medium text-gray-700 uppercase tracking-wider">Books</span>
+                {getSortIcon('bookCount')}
+              </div>
             </div>
           </div>
           <ul className="divide-y divide-gray-200">
@@ -207,8 +228,13 @@ export default function GenreList() {
                       <h3 className="text-xl font-semibold text-gray-900">
                         <Link href={`/genres/${genre.id}`} className="hover:underline">{genre.name}</Link>
                       </h3>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        ID: {genre.id}
+
+                      {/* Book Count Badge */}
+                      <span className="flex items-center text-sm text-gray-500">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        {genre.bookCount || 0} {(genre.bookCount || 0) === 1 ? 'book' : 'books'}
                       </span>
                     </div>
                     {genre.description && (
@@ -255,7 +281,10 @@ export default function GenreList() {
             <span className="ml-2 text-purple-600">(filtered by search)</span>
           </>
         ) : (
-          `Total genres: ${genres.length}`
+          <>
+            Total genres: {genres.length} • 
+            Total books: {genres.reduce((sum, genre) => sum + (genre.bookCount || 0), 0)}
+          </>
         )}
       </div>
     </div>

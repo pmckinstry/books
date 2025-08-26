@@ -1,8 +1,8 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-// Mock the database module
-vi.mock('@/lib/database', () => ({
+// Mock the database factory module
+vi.mock('@/lib/database-factory', () => ({
   bookOperations: {
     getAll: vi.fn(),
     getById: vi.fn(),
@@ -34,7 +34,7 @@ vi.mock('path', () => ({
 
 // Import after mocking
 import { GET, POST } from '@/app/api/books/route'
-import { bookOperations } from '@/lib/database'
+import { bookOperations } from '@/lib/database-factory'
 
 // Test data factories
 const createMockBook = (overrides = {}) => ({
@@ -91,7 +91,7 @@ describe('/api/books', () => {
 
       expect(response.status).toBe(200)
       expect(data).toEqual(mockPaginatedResult)
-      expect(bookOperations.getPaginated).toHaveBeenCalledWith(1, 10, 'created_at', 'desc', undefined)
+      expect(bookOperations.getPaginated).toHaveBeenCalledWith(1, 10, 'created_at', 'desc', {})
     })
 
     it('should return paginated books with search parameters', async () => {
@@ -111,7 +111,7 @@ describe('/api/books', () => {
 
       expect(response.status).toBe(200)
       expect(data).toEqual(mockPaginatedResult)
-      expect(bookOperations.getPaginated).toHaveBeenCalledWith(1, 10, 'created_at', 'desc', 'test')
+      expect(bookOperations.getPaginated).toHaveBeenCalledWith(1, 10, 'title', 'asc', { search: 'test' })
     })
 
     it('should handle database errors gracefully', async () => {

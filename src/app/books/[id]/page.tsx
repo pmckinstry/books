@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { bookOperations } from '@/lib/database';
+import { bookOperations } from '@/lib/database-factory';
 import BookCoverImage from '@/components/BookCoverImage';
 import AuthDebugger from '@/components/AuthDebugger';
 import BookDetailsClient from '@/components/BookDetailsClient';
@@ -12,14 +12,20 @@ interface BookPageProps {
 
 export default async function BookPage({ params }: BookPageProps) {
   const { id } = await params;
-  const bookId = parseInt(id);
-
-  if (isNaN(bookId)) {
-    notFound();
+  
+  // Handle both string and numeric IDs based on database type
+  let bookId: string | number;
+  const numericId = parseInt(id);
+  
+  // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB/Firebase)
+  if (!isNaN(numericId) && numericId.toString() === id) {
+    bookId = numericId;
+  } else {
+    bookId = id;
   }
 
   try {
-    const book = await bookOperations.getById(bookId);
+    const book = await bookOperations.getById(bookId as string | number);
     
     if (!book) {
       notFound();

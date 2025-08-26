@@ -353,11 +353,13 @@ export default function AddBookWithUrlPage() {
                     value={selectedGenres.map(String)}
                     onChange={handleGenreChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    size={Math.min(6, genres.length)}
+                    size={Math.min(6, Array.isArray(genres) ? genres.length : 0)}
                   >
-                    {genres.map(genre => (
-                      <option key={genre.id} value={genre.id}>{genre.name}</option>
-                    ))}
+                    {Array.isArray(genres) && genres
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map(genre => (
+                        <option key={genre.id} value={genre.id}>{genre.name}</option>
+                      ))}
                   </select>
                   <p className="mt-1 text-sm text-gray-500">Hold Ctrl/Cmd to select multiple genres</p>
                 </div>

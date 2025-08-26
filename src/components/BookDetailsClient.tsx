@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BookWithGenres, UserBookAssociation } from '@/lib/database';
+import { BookWithGenres, UserBookAssociation } from '@/lib/database-factory';
 import UserBookAssociationComponent from '@/components/UserBookAssociation';
 
 interface BookDetailsClientProps {
@@ -76,15 +76,17 @@ export default function BookDetailsClient({ book, userBookAssociation }: BookDet
           <div>
             <span className="font-semibold text-gray-700">Genres:</span>
             <div className="mt-2 flex flex-wrap gap-2">
-              {book.genres.map((genre) => (
-                <Link
-                  key={genre.id}
-                  href={`/genres/${genre.id}`}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
-                >
-                  {genre.name}
-                </Link>
-              ))}
+              {book.genres
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((genre) => (
+                  <Link
+                    key={genre.id}
+                    href={`/genres/${genre.id}`}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                  >
+                    {genre.name}
+                  </Link>
+                ))}
             </div>
           </div>
         )}

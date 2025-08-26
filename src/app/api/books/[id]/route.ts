@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bookOperations, UpdateBookData } from '@/lib/database';
+import { bookOperations, UpdateBookData } from '@/lib/database-factory';
+
+type BookId = string | number;
 
 // GET /api/books/[id] - Get a single book
 export async function GET(
@@ -8,15 +10,20 @@ export async function GET(
 ) {
   try {
     const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    if (isNaN(id)) {
-      return NextResponse.json(
-        { error: 'Invalid book ID' },
-        { status: 400 }
-      );
+    const idParam = resolvedParams.id;
+    
+    // Handle both string and numeric IDs based on database type
+    let bookId: BookId;
+    const numericId = parseInt(idParam);
+    
+    // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB/Firebase)
+    if (!isNaN(numericId) && numericId.toString() === idParam) {
+      bookId = numericId;
+    } else {
+      bookId = idParam;
     }
 
-    const book = bookOperations.getById(id);
+    const book = await bookOperations.getById(bookId as BookId);
     if (!book) {
       return NextResponse.json(
         { error: 'Book not found' },
@@ -41,12 +48,17 @@ export async function PUT(
 ) {
   try {
     const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    if (isNaN(id)) {
-      return NextResponse.json(
-        { error: 'Invalid book ID' },
-        { status: 400 }
-      );
+    const idParam = resolvedParams.id;
+    
+    // Handle both string and numeric IDs based on database type
+    let bookId: BookId;
+    const numericId = parseInt(idParam);
+    
+    // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB/Firebase)
+    if (!isNaN(numericId) && numericId.toString() === idParam) {
+      bookId = numericId;
+    } else {
+      bookId = idParam;
     }
 
     const body = await request.json();
@@ -100,7 +112,7 @@ export async function PUT(
     if (genres !== undefined) updateData.genres = genres;
 
     // Get current book for duplicate check
-    const currentBook = bookOperations.getById(id);
+    const currentBook = await bookOperations.getById(bookId as BookId);
     if (!currentBook) {
       return NextResponse.json(
         { error: 'Book not found' },
@@ -113,7 +125,7 @@ export async function PUT(
       const newTitle = title !== undefined ? title : currentBook.title;
       const newAuthor = author !== undefined ? author : currentBook.author;
       
-      const existingBook = bookOperations.checkDuplicate(newTitle, newAuthor, id);
+      const existingBook = await bookOperations.checkDuplicate(newTitle, newAuthor, bookId as BookId);
       if (existingBook) {
         return NextResponse.json(
           { 
@@ -129,7 +141,7 @@ export async function PUT(
       }
     }
 
-    const updatedBook = bookOperations.update(id, updateData);
+    const updatedBook = await bookOperations.update(bookId as BookId, updateData);
     if (!updatedBook) {
       return NextResponse.json(
         { error: 'Book not found' },
@@ -154,15 +166,20 @@ export async function DELETE(
 ) {
   try {
     const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    if (isNaN(id)) {
-      return NextResponse.json(
-        { error: 'Invalid book ID' },
-        { status: 400 }
-      );
+    const idParam = resolvedParams.id;
+    
+    // Handle both string and numeric IDs based on database type
+    let bookId: BookId;
+    const numericId = parseInt(idParam);
+    
+    // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB/Firebase)
+    if (!isNaN(numericId) && numericId.toString() === idParam) {
+      bookId = numericId;
+    } else {
+      bookId = idParam;
     }
 
-    const success = bookOperations.delete(id);
+    const success = await bookOperations.delete(bookId as BookId);
     if (!success) {
       return NextResponse.json(
         { error: 'Book not found' },

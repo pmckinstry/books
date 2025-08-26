@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { Book } from '@/lib/database';
+import { Book } from '@/lib/database-factory';
 
 interface DeleteBookFormProps {
   bookId: string;
@@ -20,7 +20,7 @@ export default function DeleteBookForm({ bookId }: DeleteBookFormProps) {
   useEffect(() => {
     const fetchBook = async () => {
       try {
-        const bookData = await api.getBook(parseInt(bookId));
+        const bookData = await api.getBook(bookId);
         setBook(bookData);
       } catch (error) {
         console.error('Error fetching book:', error);
@@ -37,7 +37,7 @@ export default function DeleteBookForm({ bookId }: DeleteBookFormProps) {
     setIsDeleting(true);
 
     try {
-      await api.deleteBook(parseInt(bookId));
+      await api.deleteBook(bookId);
       router.push('/books');
       router.refresh();
     } catch (error) {

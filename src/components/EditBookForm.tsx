@@ -4,12 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { Book } from '@/lib/database';
-
-interface Genre {
-  id: number;
-  name: string;
-}
+import { Book, Genre } from '@/lib/database-factory';
 
 interface EditBookFormProps {
   bookId: string;
@@ -30,7 +25,7 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
     publication_date: ''
   });
   const [genres, setGenres] = useState<Genre[]>([]);
-  const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +34,7 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
     const fetchBookAndGenres = async () => {
       try {
         const [bookData, genresRes] = await Promise.all([
-          api.getBook(parseInt(bookId)),
+          api.getBook(bookId),
           fetch('/api/genres').then(res => res.json())
         ]);
         setBook(bookData);
@@ -54,8 +49,19 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
           cover_image_url: bookData.cover_image_url || '',
           publication_date: bookData.publication_date || ''
         });
-        setGenres(genresRes.genres || []);
-        setSelectedGenres((bookData.genres || []).map((g: {id: number}) => g.id));
+        setGenres(Array.isArray(genresRes.genres) ? genresRes.genres : []);
+        // Handle both genre objects (with id property) and genre IDs (strings)
+        if (bookData.genres && bookData.genres.length > 0) {
+          if (typeof bookData.genres[0] === 'string') {
+            // If genres are already strings (IDs), use them directly
+            setSelectedGenres(bookData.genres as string[]);
+          } else {
+            // If genres are objects, extract the IDs
+            setSelectedGenres((bookData.genres as any[]).map((g: {id: string}) => g.id));
+          }
+        } else {
+          setSelectedGenres([]);
+        }
       } catch (error) {
         console.error('Error fetching book or genres:', error);
         setErrors({ fetch: 'Failed to load book or genres' });
@@ -76,7 +82,7 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
 
   const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const options = Array.from(e.target.selectedOptions);
-    setSelectedGenres(options.map(opt => parseInt(opt.value)));
+    setSelectedGenres(options.map(opt => opt.value));
     if (errors.genres) {
       setErrors(prev => ({ ...prev, genres: '' }));
     }
@@ -104,7 +110,7 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
     }
     setIsSubmitting(true);
     try {
-      await api.updateBook(parseInt(bookId), {
+      await api.updateBook(bookId, {
         title: formData.title.trim(),
         author: formData.author.trim(),
         description: formData.description.trim() || undefined,
@@ -324,13 +330,15 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                 errors.genres ? 'border-red-500' : 'border-gray-300'
               }`}
-              size={Math.min(6, genres.length)}
+              size={Math.min(6, Array.isArray(genres) ? genres.length : 0)}
             >
-              {genres.map((genre) => (
-                <option key={genre.id} value={genre.id}>
-                  {genre.name}
-                </option>
-              ))}
+              {Array.isArray(genres) && genres
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((genre) => (
+                  <option key={genre.id} value={genre.id}>
+                    {genre.name}
+                  </option>
+                ))}
             </select>
             {errors.genres && (
               <p className="mt-1 text-sm text-red-600">{errors.genres}</p>

@@ -267,16 +267,18 @@ export default function ReadBooksList() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-wrap gap-1">
-                          {book.genres.map((genre) => (
-                            <Link
-                              key={genre.id}
-                              href={`/genres/${genre.id}`}
-                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {genre.name}
-                            </Link>
-                          ))}
+                          {Array.isArray(book.genres) && book.genres
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((genre) => (
+                              <Link
+                                key={genre.id}
+                                href={`/genres/${genre.id}`}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {genre.name}
+                              </Link>
+                            ))}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

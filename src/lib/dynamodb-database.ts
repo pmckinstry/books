@@ -19,6 +19,7 @@ export interface User {
   updated_at: string;
 }
 
+// Database Book interface (stored in DynamoDB with genre IDs)
 export interface Book {
   id: string;
   title: string;
@@ -31,6 +32,7 @@ export interface Book {
   cover_image_url?: string;
   publication_date?: string;
   user_id?: string;
+  genres?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -103,8 +105,20 @@ export interface Genre {
   description?: string;
 }
 
-export interface BookWithGenres extends Book {
+// API Book interface (returned to frontend with full genre objects)
+export interface BookWithGenres extends Omit<Book, 'genres'> {
   genres: Genre[];
+}
+
+export interface BookFilters {
+  search?: string;
+  yearFrom?: number;
+  yearTo?: number;
+  language?: string;
+  publisher?: string;
+  pageCountFrom?: number;
+  pageCountTo?: number;
+  genreIds?: string[];
 }
 
 export interface ReadingList {
@@ -452,6 +466,7 @@ export const bookOperations = {
       const bookData: Book = {
         id: bookId,
         ...data,
+        genres: genres || [],
         created_at: now,
         updated_at: now
       };
@@ -461,17 +476,15 @@ export const bookOperations = {
         Item: bookData
       }));
       
-      // Add genres if provided
-      if (genres && genres.length > 0) {
-        await bookOperations.setGenres(bookId, genres);
-      }
+      // Invalidate books cache
+      booksCache.clear();
       
       return bookOperations.getById(bookId);
     } catch (error) {
       console.error('Error creating book:', error);
       return null;
     }
-  },
+      },
 
   // Get a single book by ID
   getById: async (id: string): Promise<BookWithGenres | null> => {
@@ -484,20 +497,36 @@ export const bookOperations = {
       if (!result.Item) return null;
       
       const book = result.Item as Book;
-      const genres = await bookOperations.getGenresForBook(id);
       
-      return { ...book, genres };
+      // Convert genre IDs to full genre objects
+      let genres: Genre[] = [];
+      if (book.genres && book.genres.length > 0) {
+        const genreObjects = await Promise.all(
+          book.genres.map(async (genreId: string) => {
+            const genre = await genreOperations.getById(genreId);
+            return genre;
+          })
+        );
+        
+        genres = genreObjects.filter((genre): genre is Genre => genre !== null);
+      }
+      
+      // Return book with genres, excluding the genres field from the original book
+      const { genres: _, ...bookWithoutGenres } = book;
+      return { ...bookWithoutGenres, genres };
     } catch (error) {
       console.error('Error getting book by ID:', error);
       return null;
     }
   },
 
-  // Get all books
-  getAll: async (): Promise<BookWithGenres[]> => {
+  // Get all books (with optional pagination)
+  getAll: async (limit?: number, offset?: number): Promise<BookWithGenres[]> => {
     try {
       const result = await docClient.send(new ScanCommand({
-        TableName: TABLES.BOOKS
+        TableName: TABLES.BOOKS,
+        ...(limit && { Limit: limit }),
+        ...(offset && { ExclusiveStartKey: { id: offset } })
       }));
       
       const books = (result.Items || []) as Book[];
@@ -505,8 +534,22 @@ export const bookOperations = {
       // Get genres for each book
       const booksWithGenres = await Promise.all(
         books.map(async (book) => {
-          const genres = await bookOperations.getGenresForBook(book.id);
-          return { ...book, genres };
+          // Convert genre IDs to full genre objects
+          let genres: Genre[] = [];
+          if (book.genres && book.genres.length > 0) {
+            const genreObjects = await Promise.all(
+              book.genres.map(async (genreId: string) => {
+                const genre = await genreOperations.getById(genreId);
+                return genre;
+              })
+            );
+            
+            genres = genreObjects.filter((genre): genre is Genre => genre !== null);
+          }
+          
+          // Return book with genres, excluding the genres field from the original book
+          const { genres: _, ...bookWithoutGenres } = book;
+          return { ...bookWithoutGenres, genres };
         })
       );
       
@@ -519,13 +562,66 @@ export const bookOperations = {
     }
   },
 
+  // Get books with pagination and caching
+  getBooksWithPagination: async (
+    page: number = 1,
+    limit: number = 20,
+    filters?: BookFilters
+  ): Promise<{ books: BookWithGenres[], total: number, totalPages: number, hasMore: boolean }> => {
+    try {
+      // Create cache key based on parameters
+      const cacheKey = `books_${page}_${limit}_${JSON.stringify(filters || {})}`;
+      
+      // Check cache first
+      const cached = booksCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < BOOKS_CACHE_TTL) {
+        return cached.books as any;
+      }
+      
+      const offset = (page - 1) * limit;
+      
+      // Get books with pagination
+      const books = await bookOperations.getAll(limit, offset);
+      
+      // Get total count for pagination info
+      const totalResult = await docClient.send(new ScanCommand({
+        TableName: TABLES.BOOKS,
+        Select: 'COUNT'
+      }));
+      const total = totalResult.Count || 0;
+      
+      const totalPages = Math.ceil(total / limit);
+      const hasMore = page < totalPages;
+      
+      const result = {
+        books,
+        total,
+        totalPages,
+        hasMore
+      };
+      
+      // Cache the result
+      booksCache.set(cacheKey, { books: result as any, timestamp: Date.now() });
+      
+      return result;
+    } catch (error) {
+      console.error('Error getting books with pagination:', error);
+      return {
+        books: [],
+        total: 0,
+        totalPages: 0,
+        hasMore: false
+      };
+    }
+  },
+
   // Get paginated books
   getPaginated: async (
     page: number = 1, 
     limit: number = 10, 
     sortBy: string = 'created_at', 
     sortOrder: 'asc' | 'desc' = 'desc', 
-    search?: string
+    filters?: BookFilters
   ): Promise<{ books: BookWithGenres[], total: number, totalPages: number }> => {
     try {
       // For simplicity, get all books and paginate in memory
@@ -534,15 +630,63 @@ export const bookOperations = {
       
       let filteredBooks = allBooks;
       
-      // Apply search filter
-      if (search && search.trim()) {
-        const searchTerm = search.toLowerCase();
-        filteredBooks = allBooks.filter(book => 
-          book.title.toLowerCase().includes(searchTerm) ||
-          book.author.toLowerCase().includes(searchTerm) ||
-          (book.description && book.description.toLowerCase().includes(searchTerm)) ||
-          (book.isbn && book.isbn.toLowerCase().includes(searchTerm))
-        );
+      // Apply filters
+      if (filters) {
+        // Text search filter
+        if (filters.search && filters.search.trim()) {
+          const searchTerm = filters.search.toLowerCase();
+          filteredBooks = filteredBooks.filter(book => 
+            book.title.toLowerCase().includes(searchTerm) ||
+            book.author.toLowerCase().includes(searchTerm) ||
+            (book.description && book.description.toLowerCase().includes(searchTerm)) ||
+            (book.isbn && book.isbn.toLowerCase().includes(searchTerm)) ||
+            (book.language && book.language.toLowerCase().includes(searchTerm)) ||
+            (book.publisher && book.publisher.toLowerCase().includes(searchTerm))
+          );
+        }
+
+        // Year range filter (from publication_date)
+        if (filters.yearFrom || filters.yearTo) {
+          filteredBooks = filteredBooks.filter(book => {
+            if (!book.publication_date) return false;
+            const bookYear = parseInt(book.publication_date.substring(0, 4));
+            if (isNaN(bookYear)) return false;
+            
+            if (filters.yearFrom && bookYear < filters.yearFrom) return false;
+            if (filters.yearTo && bookYear > filters.yearTo) return false;
+            return true;
+          });
+        }
+
+        // Language filter
+        if (filters.language && filters.language.trim()) {
+          filteredBooks = filteredBooks.filter(book => 
+            book.language === filters.language?.trim()
+          );
+        }
+
+        // Publisher filter
+        if (filters.publisher && filters.publisher.trim()) {
+          const publisherTerm = filters.publisher.toLowerCase();
+          filteredBooks = filteredBooks.filter(book => 
+            book.publisher && book.publisher.toLowerCase().includes(publisherTerm)
+          );
+        }
+
+        // Page count range filter
+        if (filters.pageCountFrom || filters.pageCountTo) {
+          filteredBooks = filteredBooks.filter(book => {
+            if (!book.page_count) return false;
+            
+            if (filters.pageCountFrom && book.page_count < filters.pageCountFrom) return false;
+            if (filters.pageCountTo && book.page_count > filters.pageCountTo) return false;
+            return true;
+          });
+        }
+
+        // Genre filter (this would need to be implemented differently in DynamoDB)
+        // For now, we'll skip this filter as it requires joining with genre data
+        // TODO: Implement genre filtering for DynamoDB
       }
       
       // Apply sorting
@@ -578,12 +722,130 @@ export const bookOperations = {
     }
   },
 
-  // Get genres for a book
-  getGenresForBook: async (): Promise<Genre[]> => {
+  // Update a book
+  update: async (id: string, data: UpdateBookData): Promise<BookWithGenres | null> => {
     try {
-      // This would need a separate table or GSI for book-genre relationships
-      // For now, return empty array
-      return [];
+      // First, get the current book to ensure it exists
+      const currentBook = await bookOperations.getById(id);
+      if (!currentBook) {
+        return null;
+      }
+
+      // Prepare the update expression
+      const updateExpressions: string[] = [];
+      const expressionAttributeNames: Record<string, string> = {};
+      const expressionAttributeValues: Record<string, any> = {};
+
+      // Add fields to update
+      if (data.title !== undefined) {
+        updateExpressions.push('#title = :title');
+        expressionAttributeNames['#title'] = 'title';
+        expressionAttributeValues[':title'] = data.title.trim();
+      }
+      if (data.author !== undefined) {
+        updateExpressions.push('#author = :author');
+        expressionAttributeNames['#author'] = 'author';
+        expressionAttributeValues[':author'] = data.author.trim();
+      }
+      if (data.description !== undefined) {
+        updateExpressions.push('#description = :description');
+        expressionAttributeNames['#description'] = 'description';
+        expressionAttributeValues[':description'] = data.description.trim();
+      }
+      if (data.isbn !== undefined) {
+        updateExpressions.push('#isbn = :isbn');
+        expressionAttributeNames['#isbn'] = 'isbn';
+        expressionAttributeValues[':isbn'] = data.isbn.trim();
+      }
+      if (data.page_count !== undefined) {
+        updateExpressions.push('#page_count = :page_count');
+        expressionAttributeNames['#page_count'] = 'page_count';
+        expressionAttributeValues[':page_count'] = data.page_count;
+      }
+      if (data.language !== undefined) {
+        updateExpressions.push('#language = :language');
+        expressionAttributeNames['#language'] = 'language';
+        expressionAttributeValues[':language'] = data.language.trim();
+      }
+      if (data.publisher !== undefined) {
+        updateExpressions.push('#publisher = :publisher');
+        expressionAttributeNames['#publisher'] = 'publisher';
+        expressionAttributeValues[':publisher'] = data.publisher.trim();
+      }
+      if (data.cover_image_url !== undefined) {
+        updateExpressions.push('#cover_image_url = :cover_image_url');
+        expressionAttributeNames['#cover_image_url'] = 'cover_image_url';
+        expressionAttributeValues[':cover_image_url'] = data.cover_image_url.trim();
+      }
+      if (data.publication_date !== undefined) {
+        updateExpressions.push('#publication_date = :publication_date');
+        expressionAttributeNames['#publication_date'] = 'publication_date';
+        expressionAttributeValues[':publication_date'] = data.publication_date.trim();
+      }
+
+      // Always update the updated_at timestamp
+      updateExpressions.push('#updated_at = :updated_at');
+      expressionAttributeNames['#updated_at'] = 'updated_at';
+      expressionAttributeValues[':updated_at'] = getCurrentTimestamp();
+
+      if (updateExpressions.length > 0) {
+        await docClient.send(new UpdateCommand({
+          TableName: TABLES.BOOKS,
+          Key: { id },
+          UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+          ExpressionAttributeNames: expressionAttributeNames,
+          ExpressionAttributeValues: expressionAttributeValues
+        }));
+      }
+
+      // Update genres if provided
+      if (data.genres) {
+        await bookOperations.setGenres(id, data.genres);
+      }
+
+      // Invalidate books cache
+      booksCache.clear();
+      
+      // Return the updated book with genres
+      return await bookOperations.getById(id);
+    } catch (error) {
+      console.error('Error updating book:', error);
+      return null;
+    }
+  },
+
+  // Get genres for a book
+  getGenresForBook: async (bookId: string): Promise<Genre[]> => {
+    try {
+      // Get the raw book data from DynamoDB to access the genres field
+      const result = await docClient.send(new GetCommand({
+        TableName: TABLES.BOOKS,
+        Key: { id: bookId }
+      }));
+      
+      if (!result.Item) return [];
+      
+      const book = result.Item as Book;
+      if (!book.genres || book.genres.length === 0) {
+        return [];
+      }
+      
+      // Fetch the actual genre objects for the genre IDs
+      const genres = await Promise.all(
+        book.genres.map(async (genreId: string) => {
+          try {
+            const genre = await genreOperations.getById(genreId);
+            return genre;
+          } catch (error) {
+            return null;
+          }
+        })
+      );
+      
+      // Filter out any null genres and return the valid ones
+      const validGenres = genres.filter((genre): genre is Genre => genre !== null);
+      
+      return validGenres;
     } catch (error) {
       console.error('Error getting genres for book:', error);
       return [];
@@ -593,14 +855,144 @@ export const bookOperations = {
   // Set genres for a book
   setGenres: async (bookId: string, genreIds: string[]): Promise<void> => {
     try {
-      // This would need a separate table for book-genre relationships
-      // For now, do nothing
-      console.log(`Setting genres ${genreIds} for book ${bookId}`);
+      // First, get the current book to ensure it exists
+      const currentBookResult = await docClient.send(new GetCommand({
+        TableName: TABLES.BOOKS,
+        Key: { id: bookId }
+      }));
+      
+      if (!currentBookResult.Item) {
+        console.error(`Book ${bookId} not found`);
+        return;
+      }
+      
+      const currentBook = currentBookResult.Item as Book;
+      
+      // Update the book with new genres and updated timestamp
+      const updatedBook: Book = {
+        ...currentBook,
+        genres: genreIds,
+        updated_at: getCurrentTimestamp()
+      };
+      
+      // Use PutCommand to ensure the entire book is updated
+      await docClient.send(new PutCommand({
+        TableName: TABLES.BOOKS,
+        Item: updatedBook
+      }));
+      
+      // Invalidate books cache
+      booksCache.clear();
     } catch (error) {
       console.error('Error setting genres for book:', error);
     }
+  },
+
+  // Delete a book
+  delete: async (id: string): Promise<boolean> => {
+    try {
+      await docClient.send(new DeleteCommand({
+        TableName: TABLES.BOOKS,
+        Key: { id }
+      }));
+      
+      // Invalidate books cache
+      booksCache.clear();
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting book:', error);
+      return false;
+    }
+  },
+
+  // Check if a book with the same title and author already exists
+  checkDuplicate: async (title: string, author: string, excludeId?: string): Promise<BookWithGenres | null> => {
+    try {
+      // For DynamoDB, we'll do a scan to check for duplicates
+      // In a production app, you'd want to use a GSI for better performance
+      const result = await docClient.send(new ScanCommand({
+        TableName: TABLES.BOOKS,
+        FilterExpression: 'title = :title AND author = :author' + (excludeId ? ' AND id <> :excludeId' : ''),
+        ExpressionAttributeValues: {
+          ':title': title.trim(),
+          ':author': author.trim(),
+          ...(excludeId && { ':excludeId': excludeId })
+        }
+      }));
+      
+      if (result.Items && result.Items.length > 0) {
+        const book = result.Items[0] as Book;
+        const genres = await bookOperations.getGenresForBook(book.id);
+        return { ...book, genres };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error checking duplicate book:', error);
+      return null;
+    }
+  },
+
+  // Get books by genre ID
+  getBooksByGenre: async (genreId: string): Promise<BookWithGenres[]> => {
+    try {
+      // Scan all books and filter in memory since DynamoDB doesn't support
+      // array contains operations efficiently for our use case
+      const result = await docClient.send(new ScanCommand({
+        TableName: TABLES.BOOKS
+      }));
+      
+      const books = (result.Items || []) as Book[];
+      
+      // Filter books that contain the specified genre ID
+      const booksWithGenre = books.filter(book => 
+        book.genres && Array.isArray(book.genres) && book.genres.includes(genreId)
+      );
+      
+      // Convert genre IDs to full genre objects for each book
+      const booksWithGenres = await Promise.all(
+        booksWithGenre.map(async (book) => {
+          let genres: Genre[] = [];
+          if (book.genres && book.genres.length > 0) {
+            const genreObjects = await Promise.all(
+              book.genres.map(async (gId: string) => {
+                const genre = await genreOperations.getById(gId);
+                return genre;
+              })
+            );
+            genres = genreObjects.filter((genre): genre is Genre => genre !== null);
+          }
+          
+          // Return book with genres, excluding the genres field from the original book
+          const { genres: _, ...bookWithoutGenres } = book;
+          return { ...bookWithoutGenres, genres };
+        })
+      );
+      
+      return booksWithGenres.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    } catch (error) {
+      console.error('Error getting books by genre:', error);
+      return [];
+    }
+  },
+
+  // Clear all caches
+  clearCache: () => {
+    booksCache.clear();
+    console.log('🧹 Books cache cleared');
   }
 };
+
+// Genre cache for performance optimization
+const genreCache = new Map<string, { genre: Genre; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Books cache for performance optimization
+const booksCache = new Map<string, { books: BookWithGenres[]; timestamp: number }>();
+const BOOKS_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
 // Genre operations
 export const genreOperations = {
@@ -613,15 +1005,16 @@ export const genreOperations = {
       const genreData: Genre = {
         id: genreId,
         name: data.name.trim(),
-        description: data.description?.trim() || null,
-        created_at: now,
-        updated_at: now
+        description: data.description?.trim() || null
       };
       
       await docClient.send(new PutCommand({
         TableName: TABLES.GENRES,
         Item: genreData
       }));
+      
+      // Invalidate cache for this genre
+      genreCache.delete(genreId);
       
       return genreData;
     } catch (error) {
@@ -633,12 +1026,26 @@ export const genreOperations = {
   // Get a single genre by ID
   getById: async (id: string): Promise<Genre | null> => {
     try {
+      // Check cache first
+      const cached = genreCache.get(id);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.genre;
+      }
+      
+      // Fetch from database
       const result = await docClient.send(new GetCommand({
         TableName: TABLES.GENRES,
         Key: { id }
       }));
       
-      return result.Item as Genre || null;
+      const genre = result.Item as Genre || null;
+      
+      // Cache the result if found
+      if (genre) {
+        genreCache.set(id, { genre, timestamp: Date.now() });
+      }
+      
+      return genre;
     } catch (error) {
       console.error('Error getting genre by ID:', error);
       return null;
@@ -656,6 +1063,78 @@ export const genreOperations = {
     } catch (error) {
       console.error('Error getting all genres:', error);
       return [];
+    }
+  },
+
+  // Check if a genre with the same name already exists
+  checkDuplicate: async (name: string): Promise<Genre | null> => {
+    try {
+      const result = await docClient.send(new ScanCommand({
+        TableName: TABLES.GENRES,
+        FilterExpression: 'name = :name',
+        ExpressionAttributeValues: {
+          ':name': name.trim()
+        }
+      }));
+      
+      if (result.Items && result.Items.length > 0) {
+        return result.Items[0] as Genre;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error checking duplicate genre:', error);
+      return null;
+    }
+  },
+
+  // Update a genre
+  update: async (id: string, data: { name: string; description?: string }): Promise<Genre | null> => {
+    try {
+      // First, get the current genre to ensure it exists
+      const currentGenre = await genreOperations.getById(id);
+      if (!currentGenre) {
+        return null;
+      }
+      
+      // Update the genre with new data
+      const updatedGenre: Genre = {
+        ...currentGenre,
+        name: data.name.trim(),
+        description: data.description?.trim() || null
+      };
+      
+      // Use PutCommand to ensure the entire genre is updated
+      await docClient.send(new PutCommand({
+        TableName: TABLES.GENRES,
+        Item: updatedGenre
+      }));
+      
+      // Invalidate cache for this genre
+      genreCache.delete(id);
+      
+      return updatedGenre;
+    } catch (error) {
+      console.error('Error updating genre:', error);
+      return null;
+    }
+  },
+
+  // Delete a genre
+  delete: async (id: string): Promise<boolean> => {
+    try {
+      await docClient.send(new DeleteCommand({
+        TableName: TABLES.GENRES,
+        Key: { id }
+      }));
+      
+      // Invalidate cache for this genre
+      genreCache.delete(id);
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting genre:', error);
+      return false;
     }
   }
 };

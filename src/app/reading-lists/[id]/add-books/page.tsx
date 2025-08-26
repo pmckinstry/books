@@ -320,15 +320,17 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
                             
                             {book.genres && book.genres.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">
-                                {book.genres.map((genre) => (
-                                  <Link
-                                    key={genre.id}
-                                    href={`/genres/${genre.id}`}
-                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
-                                  >
-                                    {genre.name}
-                                  </Link>
-                                ))}
+                                {book.genres
+                                  .sort((a, b) => a.name.localeCompare(b.name))
+                                  .map((genre) => (
+                                    <Link
+                                      key={genre.id}
+                                      href={`/genres/${genre.id}`}
+                                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                                    >
+                                      {genre.name}
+                                    </Link>
+                                  ))}
                               </div>
                             )}
                             

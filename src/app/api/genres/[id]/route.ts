@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { genreOperations } from '@/lib/database';
+import { genreOperations, bookOperations } from '@/lib/database-factory';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const genre = genreOperations.getById(Number(id));
+    const genre = await genreOperations.getById(id);
     
     if (!genre) {
       return NextResponse.json({ error: 'Genre not found' }, { status: 404 });
     }
     
-    const books = genreOperations.getBooks(Number(id));
+    // Get books that belong to this genre
+    const books = await bookOperations.getBooksByGenre(id);
+    
     return NextResponse.json({ genre, books });
   } catch (error) {
     console.error('Error fetching genre:', error);
@@ -28,12 +30,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
     
     // Check for duplicate name (excluding current genre)
-    const existing = genreOperations.checkDuplicate(name, Number(id));
-    if (existing) {
+    const existing = await genreOperations.checkDuplicate(name);
+    if (existing && existing.id !== id) {
       return NextResponse.json({ error: 'Genre name already exists' }, { status: 409 });
     }
     
-    const updatedGenre = genreOperations.update(Number(id), { name, description });
+    const updatedGenre = await genreOperations.update(id, { name, description });
     if (!updatedGenre) {
       return NextResponse.json({ error: 'Genre not found' }, { status: 404 });
     }
@@ -48,7 +50,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const success = genreOperations.delete(Number(id));
+    const success = await genreOperations.delete(id);
     
     if (!success) {
       return NextResponse.json({ error: 'Genre not found' }, { status: 404 });

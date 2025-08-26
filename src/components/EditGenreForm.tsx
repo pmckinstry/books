@@ -3,12 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-interface Genre {
-  id: number;
-  name: string;
-  description?: string;
-}
+import { Genre } from '@/lib/database-factory';
 
 interface EditGenreFormProps {
   genreId: string;

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { getCurrentUserId } from '@/lib/auth';
-import { UserBookAssociation as DBUserBookAssociation } from '@/lib/database';
+import { UserBookAssociation as DBUserBookAssociation } from '@/lib/database-factory';
 
 interface UserBookAssociationProps {
-  bookId: number;
+  bookId: string | number;
   initialAssociation?: DBUserBookAssociation | null;
 }
 

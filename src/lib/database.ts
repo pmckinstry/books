@@ -124,7 +124,9 @@ function initializeDatabase() {
       { name: 'Poetry', description: 'Literary works that use rhythm, meter, and figurative language to express ideas and emotions.' },
       { name: 'Drama', description: 'Works written for performance, typically featuring dialogue and stage directions.' },
       { name: 'Mystery', description: 'Stories involving puzzles, crimes, or unexplained events that require investigation.' },
-      { name: 'Nonfiction', description: 'Factual works based on real events, people, or information rather than fictional stories.' }
+      { name: 'Nonfiction', description: 'Factual works based on real events, people, or information rather than fictional stories.' },
+      { name: 'Fiction', description: 'Imaginative works of prose that are not based on real events or people, including novels, short stories, and novellas.' },
+      { name: 'Tragedy', description: 'Dramatic works that depict the downfall of a noble character due to a tragic flaw or fate, often ending in death or destruction.' }
     ];
     const genreMap: Record<string, number> = {};
     const insertGenre = db.prepare('INSERT INTO genres (name, description) VALUES (?, ?)');
@@ -341,6 +343,17 @@ export interface Genre {
 
 export interface BookWithGenres extends Book {
   genres: Genre[];
+}
+
+export interface BookFilters {
+  search?: string;
+  yearFrom?: number;
+  yearTo?: number;
+  language?: string;
+  publisher?: string;
+  pageCountFrom?: number;
+  pageCountTo?: number;
+  genreIds?: number[];
 }
 
 function getGenresForBook(bookId: number): Genre[] {
@@ -710,7 +723,7 @@ export const bookOperations = {
   },
 
   // Get paginated books
-  getPaginated: (page: number = 1, limit: number = 10, sortBy: string = 'created_at', sortOrder: 'asc' | 'desc' = 'desc', search?: string): { books: BookWithGenres[], total: number, totalPages: number } => {
+  getPaginated: (page: number = 1, limit: number = 10, sortBy: string = 'created_at', sortOrder: 'asc' | 'desc' = 'desc', filters?: BookFilters): { books: BookWithGenres[], total: number, totalPages: number } => {
     const offset = (page - 1) * limit;
     
     // Validate sortBy parameter
@@ -725,12 +738,14 @@ export const bookOperations = {
     }
     
     let whereClause = '';
-    let searchParams: (string | number | null)[] = [];
-    
-    if (search && search.trim()) {
-      const searchTerm = `%${search.trim()}%`;
-      whereClause = `
-        WHERE b.title LIKE ? 
+    const searchParams: (string | number | null)[] = [];
+    const whereClauses: string[] = [];
+
+    // Text search filter
+    if (filters?.search && filters.search.trim()) {
+      const searchTerm = `%${filters.search.trim()}%`;
+      whereClauses.push(`(
+        b.title LIKE ? 
         OR b.author LIKE ? 
         OR b.description LIKE ?
         OR b.isbn LIKE ?
@@ -741,8 +756,55 @@ export const bookOperations = {
           JOIN genres g ON bg.genre_id = g.id 
           WHERE bg.book_id = b.id AND g.name LIKE ?
         )
-      `;
-      searchParams = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
+      )`);
+      searchParams.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+
+    // Year range filter (from publication_date)
+    if (filters?.yearFrom) {
+      whereClauses.push('CAST(substr(b.publication_date, 1, 4) AS INTEGER) >= ?');
+      searchParams.push(filters.yearFrom);
+    }
+    if (filters?.yearTo) {
+      whereClauses.push('CAST(substr(b.publication_date, 1, 4) AS INTEGER) <= ?');
+      searchParams.push(filters.yearTo);
+    }
+
+    // Language filter
+    if (filters?.language && filters.language.trim()) {
+      whereClauses.push('b.language = ?');
+      searchParams.push(filters.language.trim());
+    }
+
+    // Publisher filter
+    if (filters?.publisher && filters.publisher.trim()) {
+      whereClauses.push('b.publisher LIKE ?');
+      searchParams.push(`%${filters.publisher.trim()}%`);
+    }
+
+    // Page count range filter
+    if (filters?.pageCountFrom) {
+      whereClauses.push('b.page_count >= ?');
+      searchParams.push(filters.pageCountFrom);
+    }
+    if (filters?.pageCountTo) {
+      whereClauses.push('b.page_count <= ?');
+      searchParams.push(filters.pageCountTo);
+    }
+
+    // Genre filter
+    if (filters?.genreIds && filters.genreIds.length > 0) {
+      const genrePlaceholders = filters.genreIds.map(() => '?').join(',');
+      whereClauses.push(`EXISTS (
+        SELECT 1 FROM book_genres bg 
+        WHERE bg.book_id = b.id AND bg.genre_id IN (${genrePlaceholders})
+      )`);
+      searchParams.push(...filters.genreIds);
+    }
+
+    // Combine all WHERE clauses
+    if (whereClauses.length > 0) {
+      whereClause = `WHERE ${whereClauses.join(' AND ')}`;
     }
     
     // Get total count with search

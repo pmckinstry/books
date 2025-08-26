@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bookOperations, CreateBookData } from '@/lib/database-factory';
+import { bookOperations, CreateBookData, BookFilters } from '@/lib/database-factory';
 
 // GET /api/books - Get all books (with optional pagination)
 export async function GET(request: NextRequest) {
@@ -7,7 +7,49 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 10;
-    const search = searchParams.get('search') || undefined;
+    const sortBy = searchParams.get('sortBy') || 'created_at';
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+    
+    // Build filters object
+    const filters: BookFilters = {};
+    
+    if (searchParams.get('search')) {
+      filters.search = searchParams.get('search')!;
+    }
+    
+    if (searchParams.get('yearFrom')) {
+      const yearFrom = parseInt(searchParams.get('yearFrom')!);
+      if (!isNaN(yearFrom) && yearFrom > 0) filters.yearFrom = yearFrom;
+    }
+    
+    if (searchParams.get('yearTo')) {
+      const yearTo = parseInt(searchParams.get('yearTo')!);
+      if (!isNaN(yearTo) && yearTo > 0) filters.yearTo = yearTo;
+    }
+    
+    if (searchParams.get('language')) {
+      filters.language = searchParams.get('language')!;
+    }
+    
+    if (searchParams.get('publisher')) {
+      filters.publisher = searchParams.get('publisher')!;
+    }
+    
+    if (searchParams.get('pageCountFrom')) {
+      const pageCountFrom = parseInt(searchParams.get('pageCountFrom')!);
+      if (!isNaN(pageCountFrom) && pageCountFrom > 0) filters.pageCountFrom = pageCountFrom;
+    }
+    
+    if (searchParams.get('pageCountTo')) {
+      const pageCountTo = parseInt(searchParams.get('pageCountTo')!);
+      if (!isNaN(pageCountTo) && pageCountTo > 0) filters.pageCountTo = pageCountTo;
+    }
+    
+    if (searchParams.get('genreIds')) {
+      const genreIdsStr = searchParams.get('genreIds')!;
+      const genreIds = genreIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      if (genreIds.length > 0) filters.genreIds = genreIds;
+    }
     
     // Validate pagination parameters
     if (page < 1 || limit < 1 || limit > 100) {
@@ -17,7 +59,24 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const result = await bookOperations.getPaginated(page, limit, 'created_at', 'desc', search);
+    // Validate year range
+    if (filters.yearFrom && filters.yearTo && filters.yearFrom > filters.yearTo) {
+      return NextResponse.json(
+        { error: 'Year from must be less than or equal to year to.' },
+        { status: 400 }
+      );
+    }
+    
+    // Validate page count range
+    if (filters.pageCountFrom && filters.pageCountTo && filters.pageCountFrom > filters.pageCountTo) {
+      return NextResponse.json(
+        { error: 'Page count from must be less than or equal to page count to.' },
+        { status: 400 }
+      );
+    }
+    
+    // Use the new optimized pagination method
+    const result = await bookOperations.getBooksWithPagination(page, limit, filters);
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching books:', error);
@@ -97,9 +156,14 @@ export async function POST(request: NextRequest) {
       publication_date: publication_date?.trim()
     };
 
-    // Note: DynamoDB doesn't have built-in duplicate checking like SQLite
-    // For now, we'll skip duplicate checking in the API
-    // TODO: Implement duplicate checking for DynamoDB if needed
+    // Check for existing book with the same title and author
+    const existingBook = bookOperations.checkDuplicate(bookData.title, bookData.author);
+    if (existingBook) {
+      return NextResponse.json(
+        { error: 'A book with this title and author already exists' },
+        { status: 409 }
+      );
+    }
 
     // Create the book with genres using the database abstraction layer
     const newBook = await bookOperations.create(bookData, genres);

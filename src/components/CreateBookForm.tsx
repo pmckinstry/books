@@ -4,11 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-
-interface Genre {
-  id: number;
-  name: string;
-}
+import { Genre } from '@/lib/database-factory';
 
 export default function CreateBookForm() {
   const router = useRouter();
@@ -23,7 +19,7 @@ export default function CreateBookForm() {
     cover_image_url: '',
     publication_date: ''
   });
-  const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,7 +28,7 @@ export default function CreateBookForm() {
     // Fetch genres from the backend
     fetch('/api/genres')
       .then(res => res.json())
-      .then(data => setGenres(data.genres || []));
+      .then(data => setGenres(Array.isArray(data.genres) ? data.genres : []));
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -46,7 +42,7 @@ export default function CreateBookForm() {
 
   const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const options = Array.from(e.target.selectedOptions);
-    setSelectedGenres(options.map(opt => parseInt(opt.value)));
+    setSelectedGenres(options.map(opt => opt.value));
   };
 
   const validateForm = () => {
@@ -313,13 +309,15 @@ export default function CreateBookForm() {
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                 errors.genres ? 'border-red-500' : 'border-gray-300'
               }`}
-              size={Math.min(6, genres.length)}
+              size={Math.min(6, Array.isArray(genres) ? genres.length : 0)}
             >
-              {genres.map((genre) => (
-                <option key={genre.id} value={genre.id}>
-                  {genre.name}
-                </option>
-              ))}
+              {Array.isArray(genres) && genres
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((genre) => (
+                  <option key={genre.id} value={genre.id}>
+                    {genre.name}
+                  </option>
+                ))}
             </select>
             {errors.genres && (
               <p className="mt-1 text-sm text-red-600">{errors.genres}</p>

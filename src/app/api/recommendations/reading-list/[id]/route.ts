@@ -39,9 +39,11 @@ export async function GET(
     const booksInList = new Set(readingList.books.map(b => b.id));
 
     readingList.books.forEach(book => {
-      book.genres.forEach(genre => {
-        genreCounts[genre.name] = (genreCounts[genre.name] || 0) + 1;
-      });
+      if (Array.isArray(book.genres)) {
+        book.genres.forEach(genre => {
+          genreCounts[genre.name] = (genreCounts[genre.name] || 0) + 1;
+        });
+      }
       authorCounts[book.author] = (authorCounts[book.author] || 0) + 1;
     });
 
@@ -66,7 +68,7 @@ export async function GET(
       if (recommendations.length >= 10) break;
       if (seenTitles.has(book.title.toLowerCase())) continue;
       
-      const bookGenres = book.genres.map(g => g.name);
+      const bookGenres = Array.isArray(book.genres) ? book.genres.map(g => g.name) : [];
       const genreMatches = bookGenres.filter(genre => topGenres.includes(genre));
       if (genreMatches.length > 0) {
         const reason = `Similar to the ${genreMatches.join(', ')} books in this list`;
@@ -92,7 +94,7 @@ export async function GET(
             title: book.title,
             author: book.author,
             reason,
-            genre: book.genres[0]?.name
+            genre: Array.isArray(book.genres) && book.genres.length > 0 ? book.genres[0].name : undefined
           });
           seenTitles.add(book.title.toLowerCase());
         }
@@ -110,7 +112,7 @@ export async function GET(
           title: book.title,
           author: book.author,
           reason,
-          genre: book.genres[0]?.name
+          genre: Array.isArray(book.genres) && book.genres.length > 0 ? book.genres[0].name : undefined
         });
         seenTitles.add(book.title.toLowerCase());
       }

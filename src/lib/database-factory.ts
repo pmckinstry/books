@@ -43,6 +43,7 @@ export type {
   Book,
   Genre,
   BookWithGenres,
+  BookFilters,
   UserBookAssociation,
   ReadingList,
   ReadingListWithBooks,

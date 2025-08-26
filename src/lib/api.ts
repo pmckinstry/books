@@ -1,4 +1,4 @@
-import { Book, CreateBookData, UpdateBookData } from './database';
+import { Book, CreateBookData, UpdateBookData } from './database-factory';
 
 const API_BASE = '/api/books';
 
@@ -13,7 +13,7 @@ export const api = {
   },
 
   // Get a single book by ID
-  async getBook(id: number): Promise<Book> {
+  async getBook(id: string | number): Promise<Book> {
     const response = await fetch(`${API_BASE}/${id}`);
     if (!response.ok) {
       if (response.status === 404) {
@@ -43,7 +43,7 @@ export const api = {
   },
 
   // Update a book
-  async updateBook(id: number, data: UpdateBookData): Promise<Book> {
+  async updateBook(id: string | number, data: UpdateBookData): Promise<Book> {
     const response = await fetch(`${API_BASE}/${id}`, {
       method: 'PUT',
       headers: {
@@ -64,7 +64,7 @@ export const api = {
   },
 
   // Delete a book
-  async deleteBook(id: number): Promise<void> {
+  async deleteBook(id: string | number): Promise<void> {
     const response = await fetch(`${API_BASE}/${id}`, {
       method: 'DELETE',
     });
