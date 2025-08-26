@@ -80,27 +80,24 @@ function initializeDatabase() {
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS reading_lists (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT,
       is_public BOOLEAN DEFAULT 0,
-      user_id INTEGER NOT NULL,
+      user_id TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS reading_list_books (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      reading_list_id INTEGER NOT NULL,
-      book_id INTEGER NOT NULL,
+      id TEXT PRIMARY KEY,
+      reading_list_id TEXT NOT NULL,
+      book_id TEXT NOT NULL,
       position INTEGER DEFAULT 0,
       notes TEXT,
       added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (reading_list_id) REFERENCES reading_lists (id) ON DELETE CASCADE,
-      FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
       UNIQUE(reading_list_id, book_id)
     )
   `);
@@ -356,7 +353,7 @@ export interface BookFilters {
   genreIds?: number[];
 }
 
-function getGenresForBook(bookId: number): Genre[] {
+function getGenresForBook(bookId: string): Genre[] {
   const stmt = db.prepare(`
     SELECT g.id, g.name, g.description FROM genres g
     INNER JOIN book_genres bg ON g.id = bg.genre_id
@@ -364,6 +361,16 @@ function getGenresForBook(bookId: number): Genre[] {
     ORDER BY g.name
   `);
   return stmt.all(bookId) as Genre[];
+}
+
+function getBooksByGenre(genreId: string): Book[] {
+  const stmt = db.prepare(`
+    SELECT b.* FROM books b
+    INNER JOIN book_genres bg ON b.id = bg.book_id
+    WHERE bg.genre_id = ?
+    ORDER BY b.title
+  `);
+  return stmt.all(genreId) as Book[];
 }
 
 // User operations
@@ -978,10 +985,15 @@ export const bookOperations = {
     for (const genreId of genreIds) {
       deleteStmt.run(bookId, genreId);
     }
+  },
+
+  // Get books by genre
+  getBooksByGenre: (genreId: string): Book[] => {
+    return getBooksForGenre(genreId);
   }
 };
 
-export function getBooksForGenre(genreId: number) {
+export function getBooksForGenre(genreId: string) {
   const stmt = db.prepare(`
     SELECT b.* FROM books b
     INNER JOIN book_genres bg ON b.id = bg.book_id
@@ -1076,19 +1088,19 @@ export const genreOperations = {
 };
 
 export interface ReadingList {
-  id: number;
+  id: string;
   name: string;
   description?: string;
   is_public: boolean;
-  user_id: number;
+  user_id: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface ReadingListBook {
-  id: number;
-  reading_list_id: number;
-  book_id: number;
+  id: string;
+  reading_list_id: string;
+  book_id: string;
   position: number;
   notes?: string;
   added_at: string;
@@ -1103,7 +1115,7 @@ export interface CreateReadingListData {
   name: string;
   description?: string;
   is_public?: boolean;
-  user_id: number;
+  user_id: string;
 }
 
 export interface UpdateReadingListData {
@@ -1113,8 +1125,8 @@ export interface UpdateReadingListData {
 }
 
 export interface AddBookToListData {
-  reading_list_id: number;
-  book_id: number;
+  reading_list_id: string;
+  book_id: string;
   position?: number;
   notes?: string;
 }
@@ -1128,24 +1140,25 @@ export interface UpdateBookInListData {
 export const readingListOperations = {
   // Create a new reading list
   create: (data: CreateReadingListData): ReadingList => {
+    const id = crypto.randomUUID();
     const stmt = db.prepare(`
-      INSERT INTO reading_lists (name, description, is_public, user_id) 
-      VALUES (?, ?, ?, ?)
+      INSERT INTO reading_lists (id, name, description, is_public, user_id) 
+      VALUES (?, ?, ?, ?, ?)
     `);
-    const result = stmt.run(data.name, data.description, data.is_public ? 1 : 0, data.user_id);
+    stmt.run(id, data.name, data.description, data.is_public ? 1 : 0, data.user_id);
     
-    return readingListOperations.getById(result.lastInsertRowid as number)!;
+    return readingListOperations.getById(id)!;
   },
 
   // Get a reading list by ID
-  getById: (id: number): ReadingList | null => {
+  getById: (id: string): ReadingList | null => {
     const stmt = db.prepare('SELECT * FROM reading_lists WHERE id = ?');
     const readingList = stmt.get(id) as ReadingList | undefined;
     return readingList || null;
   },
 
   // Get reading list with books
-  getByIdWithBooks: (id: number): ReadingListWithBooks | null => {
+  getByIdWithBooks: (id: string): ReadingListWithBooks | null => {
     const readingList = readingListOperations.getById(id);
     if (!readingList) return null;
 
@@ -1193,7 +1206,7 @@ export const readingListOperations = {
   },
 
   // Get all reading lists for a user
-  getByUser: (userId: number): ReadingList[] => {
+  getByUser: (userId: string): ReadingList[] => {
     const stmt = db.prepare('SELECT * FROM reading_lists WHERE user_id = ? ORDER BY updated_at DESC');
     return stmt.all(userId) as ReadingList[];
   },
@@ -1205,7 +1218,7 @@ export const readingListOperations = {
   },
 
   // Update a reading list
-  update: (id: number, data: UpdateReadingListData): ReadingList | null => {
+  update: (id: string, data: UpdateReadingListData): ReadingList | null => {
     const readingList = readingListOperations.getById(id);
     if (!readingList) return null;
 
@@ -1241,7 +1254,7 @@ export const readingListOperations = {
   },
 
   // Delete a reading list
-  delete: (id: number): boolean => {
+  delete: (id: string): boolean => {
     const stmt = db.prepare('DELETE FROM reading_lists WHERE id = ?');
     const result = stmt.run(id);
     return result.changes > 0;
@@ -1250,6 +1263,13 @@ export const readingListOperations = {
   // Add a book to a reading list
   addBook: (data: AddBookToListData): ReadingListBook | null => {
     try {
+      // Check if book is already in the reading list
+      const existingBook = readingListOperations.getBookInList(data.reading_list_id, data.book_id);
+      if (existingBook) {
+        console.log(`Book ${data.book_id} is already in reading list ${data.reading_list_id}`);
+        return null; // Book already exists in list
+      }
+
       // Get the next position if not specified
       if (data.position === undefined) {
         const maxPosStmt = db.prepare('SELECT MAX(position) as max_pos FROM reading_list_books WHERE reading_list_id = ?');
@@ -1257,11 +1277,12 @@ export const readingListOperations = {
         data.position = (result.max_pos || 0) + 1;
       }
 
+      const id = crypto.randomUUID();
       const stmt = db.prepare(`
-        INSERT INTO reading_list_books (reading_list_id, book_id, position, notes) 
-        VALUES (?, ?, ?, ?)
+        INSERT INTO reading_list_books (id, reading_list_id, book_id, position, notes) 
+        VALUES (?, ?, ?, ?, ?)
       `);
-      stmt.run(data.reading_list_id, data.book_id, data.position, data.notes || null);
+      stmt.run(id, data.reading_list_id, data.book_id, data.position, data.notes || null);
       
       return readingListOperations.getBookInList(data.reading_list_id, data.book_id);
     } catch (error) {
@@ -1271,21 +1292,21 @@ export const readingListOperations = {
   },
 
   // Remove a book from a reading list
-  removeBook: (readingListId: number, bookId: number): boolean => {
+  removeBook: (readingListId: string, bookId: string): boolean => {
     const stmt = db.prepare('DELETE FROM reading_list_books WHERE reading_list_id = ? AND book_id = ?');
     const result = stmt.run(readingListId, bookId);
     return result.changes > 0;
   },
 
   // Get a book in a reading list
-  getBookInList: (readingListId: number, bookId: number): ReadingListBook | null => {
+  getBookInList: (readingListId: string, bookId: string): ReadingListBook | null => {
     const stmt = db.prepare('SELECT * FROM reading_list_books WHERE reading_list_id = ? AND book_id = ?');
     const readingListBook = stmt.get(readingListId, bookId) as ReadingListBook | undefined;
     return readingListBook || null;
   },
 
   // Update a book in a reading list
-  updateBookInList: (readingListId: number, bookId: number, data: UpdateBookInListData): ReadingListBook | null => {
+  updateBookInList: (readingListId: string, bookId: string, data: UpdateBookInListData): ReadingListBook | null => {
     const updates: string[] = [];
     const values: (string | number | null)[] = [];
 
@@ -1315,7 +1336,7 @@ export const readingListOperations = {
   },
 
   // Reorder books in a reading list
-  reorderBooks: (readingListId: number, bookIds: number[]): boolean => {
+  reorderBooks: (readingListId: string, bookIds: string[]): boolean => {
     try {
       const stmt = db.prepare('UPDATE reading_list_books SET position = ? WHERE reading_list_id = ? AND book_id = ?');
       

@@ -58,13 +58,23 @@ export default function LoginForm() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('LoginForm - Login successful, received data:', data);
+        console.log('LoginForm - User data:', {
+          id: data.user.id,
+          idType: typeof data.user.id,
+          username: data.user.username
+        });
+        
         // Store user info using the proper auth function
+        console.log('LoginForm - Calling setCurrentUser...');
         setCurrentUser(data.user);
         
+        console.log('LoginForm - Redirecting to /books...');
         // Use router.push instead of window.location.href for better state management
         router.push('/books');
       } else {
         const error = await response.json();
+        console.error('LoginForm - Login failed with error:', error);
         setErrors({ submit: error.error || 'Login failed' });
       }
     } catch (error) {

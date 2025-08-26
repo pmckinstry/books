@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userBookAssociationOperations, userOperations, bookOperations } from '@/lib/database';
+import { userBookAssociationOperations, userOperations, bookOperations } from '@/lib/database-factory';
 
 // GET /api/user-books - Get user's book associations
 export async function GET(request: NextRequest) {
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userIdNum = parseInt(userId);
-    if (isNaN(userIdNum)) {
+    // Validate userId is a non-empty string
+    if (userId.trim() === '') {
       return NextResponse.json(
         { error: 'Invalid user ID' },
         { status: 400 }
@@ -25,10 +25,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Debug: Check if user exists
-    const user = userOperations.getById(userIdNum);
+    const user = await userOperations.getById(userId);
     if (!user) {
       return NextResponse.json(
-        { error: `User with ID ${userIdNum} does not exist` },
+        { error: `User with ID ${userId} does not exist` },
         { status: 404 }
       );
     }
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const result = userBookAssociationOperations.getBooksWithUserAssociations(userIdNum, page, limit);
+    const result = await userBookAssociationOperations.getBooksWithUserAssociations(userId, page, limit);
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching user books:', error);
@@ -58,7 +58,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { user_id, book_id, read_status, rating, comments } = body;
 
-    console.log('Creating user-book association:', { user_id, book_id, read_status, rating, comments });
+    console.log('Creating user-book association - Raw body:', body);
+    console.log('Creating user-book association - user_id type:', typeof user_id, 'value:', user_id);
+    console.log('Creating user-book association - book_id type:', typeof book_id, 'value:', book_id);
 
     if (!user_id || !book_id) {
       return NextResponse.json(
@@ -67,23 +69,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate user_id and book_id are numbers
-    if (typeof user_id !== 'number' || user_id < 1) {
+    // Validate user_id and book_id are strings
+    if (typeof user_id !== 'string' || user_id.trim() === '') {
+      console.error('Validation failed - user_id is not a valid string:', typeof user_id, user_id);
       return NextResponse.json(
-        { error: 'User ID must be a valid positive number' },
+        { error: 'User ID must be a valid string' },
         { status: 400 }
       );
     }
 
-    if (typeof book_id !== 'number' || book_id < 1) {
+    if (typeof book_id !== 'string' || book_id.trim() === '') {
+      console.error('Validation failed - book_id is not a valid string:', typeof book_id, book_id);
       return NextResponse.json(
-        { error: 'Book ID must be a valid positive number' },
+        { error: 'Book ID must be a valid string' },
         { status: 400 }
       );
     }
+
+    console.log('Validation passed - proceeding with database operations');
 
     // Debug: Check if user exists
-    const user = userOperations.getById(user_id);
+    const user = await userOperations.getById(user_id);
     if (!user) {
       return NextResponse.json(
         { error: `User with ID ${user_id} does not exist` },
@@ -92,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Debug: Check if book exists
-    const book = bookOperations.getById(book_id);
+    const book = await bookOperations.getById(book_id);
     if (!book) {
       return NextResponse.json(
         { error: `Book with ID ${book_id} does not exist` },
@@ -117,14 +123,16 @@ export async function POST(request: NextRequest) {
     }
 
     const associationData = {
-      user_id: user_id,
+      user_id,
       book_id,
       read_status,
       rating,
       comments
     };
 
-    const association = userBookAssociationOperations.upsert(associationData);
+    console.log('Creating association with data:', associationData);
+
+    const association = await userBookAssociationOperations.upsert(associationData);
     return NextResponse.json(association, { status: 201 });
   } catch (error) {
     console.error('Error creating user-book association:', error);

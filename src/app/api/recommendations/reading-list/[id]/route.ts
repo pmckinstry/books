@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readingListOperations, bookOperations } from '@/lib/database';
+import { readingListOperations, bookOperations } from '@/lib/database-factory';
 
 interface BookRecommendation {
   title: string;
@@ -14,19 +14,16 @@ export async function GET(
 ) {
   try {
     const resolvedParams = await params;
-    const readingListId = parseInt(resolvedParams.id);
-    
-    if (isNaN(readingListId)) {
-      return NextResponse.json({ error: 'Invalid reading list ID' }, { status: 400 });
-    }
+    const readingListId = resolvedParams.id;
 
     // Get the reading list with its books
-    const readingList = readingListOperations.getByIdWithBooks(readingListId);
+    const readingList = await (readingListOperations as any).getByIdWithBooks(readingListId);
     if (!readingList) {
       return NextResponse.json({ error: 'Reading list not found' }, { status: 404 });
     }
 
-    if (readingList.books.length === 0) {
+    // Check if books array exists and has items
+    if (!readingList.books || readingList.books.length === 0) {
       return NextResponse.json({ 
         recommendations: [],
         message: 'No books in this reading list yet. Add some books to get recommendations!' 
@@ -36,11 +33,11 @@ export async function GET(
     // Analyze the books in this reading list
     const genreCounts: Record<string, number> = {};
     const authorCounts: Record<string, number> = {};
-    const booksInList = new Set(readingList.books.map(b => b.id));
+    const booksInList = new Set(readingList.books.map((b: any) => b.id));
 
-    readingList.books.forEach(book => {
+    readingList.books.forEach((book: any) => {
       if (Array.isArray(book.genres)) {
-        book.genres.forEach(genre => {
+        book.genres.forEach((genre: any) => {
           genreCounts[genre.name] = (genreCounts[genre.name] || 0) + 1;
         });
       }
@@ -57,8 +54,8 @@ export async function GET(
       .map(([author]) => author);
 
     // Get all books and filter out those already in the list
-    const allBooks = bookOperations.getAll();
-    const recommendedBooks = allBooks.filter(b => !booksInList.has(b.id));
+    const allBooks = await (bookOperations as any).getAll();
+    const recommendedBooks = allBooks.filter((b: any) => !booksInList.has(b.id));
 
     // Simple recommendation algorithm based on genre matching
     const recommendations: BookRecommendation[] = [];
@@ -68,8 +65,8 @@ export async function GET(
       if (recommendations.length >= 10) break;
       if (seenTitles.has(book.title.toLowerCase())) continue;
       
-      const bookGenres = Array.isArray(book.genres) ? book.genres.map(g => g.name) : [];
-      const genreMatches = bookGenres.filter(genre => topGenres.includes(genre));
+      const bookGenres = Array.isArray(book.genres) ? book.genres.map((g: any) => g.name) : [];
+      const genreMatches = bookGenres.filter((genre: any) => topGenres.includes(genre));
       if (genreMatches.length > 0) {
         const reason = `Similar to the ${genreMatches.join(', ')} books in this list`;
         recommendations.push({
@@ -94,7 +91,7 @@ export async function GET(
             title: book.title,
             author: book.author,
             reason,
-            genre: Array.isArray(book.genres) && book.genres.length > 0 ? book.genres[0].name : undefined
+            genre: Array.isArray(book.genres) && book.genres.length > 0 ? (book.genres[0] as any).name : undefined
           });
           seenTitles.add(book.title.toLowerCase());
         }
@@ -112,7 +109,7 @@ export async function GET(
           title: book.title,
           author: book.author,
           reason,
-          genre: Array.isArray(book.genres) && book.genres.length > 0 ? book.genres[0].name : undefined
+          genre: Array.isArray(book.genres) && book.genres.length > 0 ? (book.genres[0] as any).name : undefined
         });
         seenTitles.add(book.title.toLowerCase());
       }

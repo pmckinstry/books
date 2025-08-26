@@ -10,6 +10,7 @@ import { docClient, TABLES } from './dynamodb';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
+
 // Type definitions (keeping the same interface for compatibility)
 export interface User {
   id: string;
@@ -452,6 +453,120 @@ export const userBookAssociationOperations = {
       console.error('Error deleting user-book association:', error);
       return false;
     }
+  },
+
+  // Get read books with pagination and sorting
+  getReadBooksWithPagination: async (
+    userId: string, 
+    page: number = 1, 
+    limit: number = 10, 
+    sortBy: string = 'title', 
+    sortOrder: 'asc' | 'desc' = 'asc', 
+    search?: string
+  ): Promise<{ 
+    books: (BookWithGenres & { user_association: UserBookAssociation })[], 
+    total: number, 
+    totalPages: number, 
+    hasMore: boolean 
+  }> => {
+    try {
+      // Get all user associations first
+      const userAssociations = await userBookAssociationOperations.getByUser(userId);
+      
+      // Filter for read books only
+      const readAssociations = userAssociations.filter(uba => uba.read_status === 'read');
+      
+      if (readAssociations.length === 0) {
+        return {
+          books: [],
+          total: 0,
+          totalPages: 0,
+          hasMore: false
+        };
+      }
+
+      // Get book details for each read association
+      const bookPromises = readAssociations.map(async (association) => {
+        const book = await bookOperations.getById(association.book_id);
+        if (!book) return null;
+        
+        return {
+          ...book,
+          user_association: association
+        };
+      });
+
+      let books = (await Promise.all(bookPromises)).filter(book => book !== null) as any[];
+
+      // Apply search filter if provided
+      if (search && search.trim()) {
+        const searchTerm = search.toLowerCase();
+        books = books.filter(book => 
+          book.title.toLowerCase().includes(searchTerm) ||
+          book.author.toLowerCase().includes(searchTerm) ||
+          (book.description && book.description.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      // Apply sorting
+      books.sort((a, b) => {
+        let aValue: any, bValue: any;
+        
+        switch (sortBy) {
+          case 'title':
+            aValue = a.title.toLowerCase();
+            bValue = b.title.toLowerCase();
+            break;
+          case 'author':
+            aValue = a.author.toLowerCase();
+            bValue = b.author.toLowerCase();
+            break;
+          case 'rating':
+            aValue = a.user_association.rating || 0;
+            bValue = b.user_association.rating || 0;
+            break;
+          case 'created_at':
+            aValue = new Date(a.user_association.created_at).getTime();
+            bValue = new Date(b.user_association.created_at).getTime();
+            break;
+          case 'updated_at':
+            aValue = new Date(a.user_association.updated_at).getTime();
+            bValue = new Date(b.user_association.updated_at).getTime();
+            break;
+          default:
+            aValue = a.title.toLowerCase();
+            bValue = b.title.toLowerCase();
+        }
+
+        if (sortOrder === 'asc') {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+
+      // Apply pagination
+      const total = books.length;
+      const totalPages = Math.ceil(total / limit);
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedBooks = books.slice(startIndex, endIndex);
+
+      return {
+        books: paginatedBooks,
+        total,
+        totalPages,
+        hasMore: page < totalPages
+      };
+    } catch (error) {
+      console.error('Error getting read books with pagination:', error);
+      return {
+        books: [],
+        total: 0,
+        totalPages: 0,
+        hasMore: false
+      };
+    }
   }
 };
 
@@ -523,6 +638,14 @@ export const bookOperations = {
   // Get all books (with optional pagination)
   getAll: async (limit?: number, offset?: number): Promise<BookWithGenres[]> => {
     try {
+      // Check cache first
+      const cacheKey = `all_books_${limit || 'all'}_${offset || 0}`;
+      const cached = booksCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < BOOKS_CACHE_TTL) {
+        console.log('Cache hit for all books');
+        return cached.books;
+      }
+
       const result = await docClient.send(new ScanCommand({
         TableName: TABLES.BOOKS,
         ...(limit && { Limit: limit }),
@@ -553,9 +676,15 @@ export const bookOperations = {
         })
       );
       
-      return booksWithGenres.sort((a, b) => 
+      const sortedBooks = booksWithGenres.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
+      
+      // Cache the result
+      booksCache.set(cacheKey, { books: sortedBooks, timestamp: Date.now() });
+      console.log('Cached all books result');
+      
+      return sortedBooks;
     } catch (error) {
       console.error('Error getting all books:', error);
       return [];
@@ -578,23 +707,90 @@ export const bookOperations = {
         return cached.books as any;
       }
       
-      const offset = (page - 1) * limit;
+      // Get all books first (we'll filter and paginate in memory)
+      // In production, you might want to use DynamoDB's Query with GSI for better performance
+      const allBooks = await bookOperations.getAll();
       
-      // Get books with pagination
-      const books = await bookOperations.getAll(limit, offset);
+      let filteredBooks = allBooks;
       
-      // Get total count for pagination info
-      const totalResult = await docClient.send(new ScanCommand({
-        TableName: TABLES.BOOKS,
-        Select: 'COUNT'
-      }));
-      const total = totalResult.Count || 0;
+      // Apply filters
+      if (filters) {
+        // Text search filter
+        if (filters.search && filters.search.trim()) {
+          const searchTerm = filters.search.toLowerCase();
+          filteredBooks = filteredBooks.filter(book => 
+            book.title.toLowerCase().includes(searchTerm) ||
+            book.author.toLowerCase().includes(searchTerm) ||
+            (book.description && book.description.toLowerCase().includes(searchTerm)) ||
+            (book.isbn && book.isbn.toLowerCase().includes(searchTerm)) ||
+            (book.language && book.language.toLowerCase().includes(searchTerm)) ||
+            (book.publisher && book.publisher.toLowerCase().includes(searchTerm)) ||
+            // Search in genres
+            book.genres.some(genre => genre.name.toLowerCase().includes(searchTerm))
+          );
+        }
+
+        // Year range filter (from publication_date)
+        if (filters.yearFrom || filters.yearTo) {
+          filteredBooks = filteredBooks.filter(book => {
+            if (!book.publication_date) return false;
+            const bookYear = parseInt(book.publication_date.substring(0, 4));
+            if (isNaN(bookYear)) return false;
+            
+            if (filters.yearFrom && bookYear < filters.yearFrom) return false;
+            if (filters.yearTo && bookYear > filters.yearTo) return false;
+            return true;
+          });
+        }
+
+        // Language filter
+        if (filters.language && filters.language.trim()) {
+          filteredBooks = filteredBooks.filter(book => 
+            book.language === filters.language?.trim()
+          );
+        }
+
+        // Publisher filter
+        if (filters.publisher && filters.publisher.trim()) {
+          const publisherTerm = filters.publisher.toLowerCase();
+          filteredBooks = filteredBooks.filter(book => 
+            book.publisher && book.publisher.toLowerCase().includes(publisherTerm)
+          );
+        }
+
+        // Page count range filter
+        if (filters.pageCountFrom || filters.pageCountTo) {
+          filteredBooks = filteredBooks.filter(book => {
+            if (!book.page_count) return false;
+            
+            if (filters.pageCountFrom && book.page_count < filters.pageCountFrom) return false;
+            if (filters.pageCountTo && book.page_count > filters.pageCountTo) return false;
+            return true;
+          });
+        }
+
+        // Genre filter
+        if (filters.genreIds && filters.genreIds.length > 0) {
+          filteredBooks = filteredBooks.filter(book => 
+            book.genres.some(genre => filters.genreIds!.includes(genre.id))
+          );
+        }
+      }
       
+      // Sort books by created_at (newest first)
+      filteredBooks.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      
+      // Apply pagination
+      const total = filteredBooks.length;
       const totalPages = Math.ceil(total / limit);
+      const offset = (page - 1) * limit;
+      const paginatedBooks = filteredBooks.slice(offset, offset + limit);
       const hasMore = page < totalPages;
       
       const result = {
-        books,
+        books: paginatedBooks,
         total,
         totalPages,
         hasMore
@@ -1144,6 +1340,19 @@ export const readingListOperations = {
   // Create a new reading list
   create: async (data: CreateReadingListData): Promise<ReadingList | null> => {
     try {
+      console.log(`Creating reading list: "${data.name}" for user: ${data.user_id}`);
+      
+      // Check for duplicate names for the same user
+      if (data.user_id) {
+        console.log(`Checking for duplicates...`);
+        const existingList = await readingListOperations.checkDuplicate(data.name, data.user_id);
+        if (existingList) {
+          console.error(`Reading list with name "${data.name}" already exists for user ${data.user_id}`);
+          return null; // Duplicate found
+        }
+        console.log(`No duplicates found, proceeding with creation`);
+      }
+      
       const listId = generateId();
       const now = getCurrentTimestamp();
       
@@ -1160,6 +1369,7 @@ export const readingListOperations = {
         Item: readingListData
       }));
       
+      console.log(`Successfully created reading list with ID: ${listId}`);
       return readingListData;
     } catch (error) {
       console.error('Error creating reading list:', error);
@@ -1182,9 +1392,42 @@ export const readingListOperations = {
     }
   },
 
+  // Check if a reading list with the same name already exists for a user
+  checkDuplicate: async (name: string, userId: string): Promise<ReadingList | null> => {
+    try {
+      // Use the existing user_id-index with a filter expression
+      // This is less efficient but works with the current table structure
+      const result = await docClient.send(new QueryCommand({
+        TableName: TABLES.READING_LISTS,
+        IndexName: 'user_id-index',
+        KeyConditionExpression: 'user_id = :user_id',
+        FilterExpression: '#n = :name',
+        ExpressionAttributeNames: {
+          '#n': 'name'
+        },
+        ExpressionAttributeValues: {
+          ':user_id': userId,
+          ':name': name.trim()
+        }
+      }));
+      
+      return result.Items && result.Items.length > 0 ? (result.Items[0] as ReadingList) : null;
+    } catch (error) {
+      console.error('Error checking for duplicate reading list:', error);
+      return null;
+    }
+  },
+
   // Add a book to a reading list
   addBook: async (data: AddBookToListData): Promise<ReadingListBook | null> => {
     try {
+      // Check if book is already in the reading list
+      const existingBook = await readingListOperations.getBookInList(data.reading_list_id, data.book_id);
+      if (existingBook) {
+        console.log(`Book ${data.book_id} is already in reading list ${data.reading_list_id}`);
+        return null; // Book already exists in list
+      }
+
       const now = getCurrentTimestamp();
       
       const bookData: ReadingListBook = {
@@ -1205,6 +1448,316 @@ export const readingListOperations = {
     } catch (error) {
       console.error('Error adding book to reading list:', error);
       return null;
+    }
+  },
+
+  // Get reading list with books
+  getByIdWithBooks: async (id: string): Promise<ReadingListWithBooks | null> => {
+    try {
+      // Get the reading list
+      const readingList = await readingListOperations.getById(id);
+      if (!readingList) return null;
+
+      // Get all books in this reading list
+      const booksResult = await docClient.send(new QueryCommand({
+        TableName: TABLES.READING_LIST_BOOKS,
+        KeyConditionExpression: 'reading_list_id = :reading_list_id',
+        ExpressionAttributeValues: {
+          ':reading_list_id': id
+        }
+      }));
+
+      if (!booksResult.Items || booksResult.Items.length === 0) {
+        return {
+          ...readingList,
+          books: [],
+          book_count: 0
+        };
+      }
+
+      // Get book details for each book in the list
+      const bookPromises = booksResult.Items.map(async (item) => {
+        const bookResult = await docClient.send(new GetCommand({
+          TableName: TABLES.BOOKS,
+          Key: { id: item.book_id }
+        }));
+        
+        if (!bookResult.Item) return null;
+
+        // For now, return empty genres array since BOOK_GENRES table doesn't exist
+        // TODO: Implement proper genre handling for DynamoDB
+        const genres: Array<{id: string; name: string}> = [];
+
+        const book = bookResult.Item as any;
+        const bookWithGenres = {
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          year: book.year,
+          description: book.description,
+          isbn: book.isbn,
+          page_count: book.page_count,
+          language: book.language,
+          publisher: book.publisher,
+          cover_image_url: book.cover_image_url,
+          publication_date: book.publication_date,
+          user_id: book.user_id,
+          created_at: book.created_at,
+          updated_at: book.updated_at,
+          genres
+        };
+
+        return {
+          ...bookWithGenres,
+          reading_list_book: item as ReadingListBook
+        };
+      });
+
+      const books = (await Promise.all(bookPromises)).filter(book => book !== null) as any[];
+      
+      return {
+        ...readingList,
+        books,
+        book_count: books.length
+      };
+    } catch (error) {
+      console.error('Error getting reading list with books:', error);
+      return null;
+    }
+  },
+
+  // Get all reading lists for a user
+  getByUser: async (userId: string): Promise<ReadingList[]> => {
+    try {
+      const result = await docClient.send(new QueryCommand({
+        TableName: TABLES.READING_LISTS,
+        IndexName: 'user_id-index',
+        KeyConditionExpression: 'user_id = :user_id',
+        ExpressionAttributeValues: {
+          ':user_id': userId
+        }
+      }));
+      
+      return result.Items as ReadingList[] || [];
+    } catch (error) {
+      console.error('Error getting reading lists by user:', error);
+      return [];
+    }
+  },
+
+  // Get public reading lists
+  getPublic: async (): Promise<ReadingList[]> => {
+    try {
+      // Try to use the is_public-index first
+      try {
+        const result = await docClient.send(new QueryCommand({
+          TableName: TABLES.READING_LISTS,
+          IndexName: 'is_public-index',
+          KeyConditionExpression: 'is_public = :is_public',
+          ExpressionAttributeValues: {
+            ':is_public': true
+          }
+        }));
+        
+        return result.Items as ReadingList[] || [];
+      } catch (indexError) {
+        // Fallback: scan and filter if index doesn't exist
+        console.log('is_public-index not available, falling back to scan with filter');
+        const result = await docClient.send(new ScanCommand({
+          TableName: TABLES.READING_LISTS,
+          FilterExpression: 'is_public = :is_public',
+          ExpressionAttributeValues: {
+            ':is_public': true
+          }
+        }));
+        
+        return result.Items as ReadingList[] || [];
+      }
+    } catch (error) {
+      console.error('Error getting public reading lists:', error);
+      return [];
+    }
+  },
+
+  // Update a reading list
+  update: async (id: string, data: UpdateReadingListData): Promise<ReadingList | null> => {
+    try {
+      const readingList = await readingListOperations.getById(id);
+      if (!readingList) return null;
+
+      const now = getCurrentTimestamp();
+      const updateData: Partial<ReadingList> = {
+        ...data,
+        updated_at: now
+      };
+
+      // Remove undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key as keyof typeof updateData] === undefined) {
+          delete updateData[key as keyof typeof updateData];
+        }
+      });
+
+      const result = await docClient.send(new UpdateCommand({
+        TableName: TABLES.READING_LISTS,
+        Key: { id },
+        UpdateExpression: `SET ${Object.keys(updateData).map(key => `#${key} = :${key}`).join(', ')}`,
+        ExpressionAttributeNames: Object.keys(updateData).reduce((acc, key) => {
+          acc[`#${key}`] = key;
+          return acc;
+        }, {} as Record<string, string>),
+        ExpressionAttributeValues: Object.keys(updateData).reduce((acc, key) => {
+          acc[`:${key}`] = updateData[key as keyof typeof updateData];
+          return acc;
+        }, {} as Record<string, string>),
+        ReturnValues: 'ALL_NEW'
+      }));
+
+      return result.Attributes as ReadingList;
+    } catch (error) {
+      console.error('Error updating reading list:', error);
+      return null;
+    }
+  },
+
+  // Delete a reading list
+  delete: async (id: string): Promise<boolean> => {
+    try {
+      // First delete all books in the list
+      const booksResult = await docClient.send(new QueryCommand({
+        TableName: TABLES.READING_LIST_BOOKS,
+        KeyConditionExpression: 'reading_list_id = :reading_list_id',
+        ExpressionAttributeValues: {
+          ':reading_list_id': id
+        }
+      }));
+
+      if (booksResult.Items && booksResult.Items.length > 0) {
+        const deletePromises = booksResult.Items.map(item => 
+          docClient.send(new DeleteCommand({
+            TableName: TABLES.READING_LIST_BOOKS,
+            Key: { 
+              reading_list_id: item.reading_list_id, 
+              book_id: item.book_id 
+            }
+          }))
+        );
+        await Promise.all(deletePromises);
+      }
+
+      // Then delete the reading list
+      await docClient.send(new DeleteCommand({
+        TableName: TABLES.READING_LISTS,
+        Key: { id }
+      }));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting reading list:', error);
+      return false;
+    }
+  },
+
+  // Remove a book from a reading list
+  removeBook: async (readingListId: string, bookId: string): Promise<boolean> => {
+    try {
+      // Since we have the reading_list_id and book_id, we can delete directly
+      // without needing to query first
+      await docClient.send(new DeleteCommand({
+        TableName: TABLES.READING_LIST_BOOKS,
+        Key: { 
+          reading_list_id: readingListId, 
+          book_id: bookId 
+        }
+      }));
+      return true;
+    } catch (error) {
+      console.error('Error removing book from reading list:', error);
+      return false;
+    }
+  },
+
+  // Get a book in a reading list
+  getBookInList: async (readingListId: string, bookId: string): Promise<ReadingListBook | null> => {
+    try {
+      // Since we have both keys, we can use GetCommand instead of QueryCommand
+      const result = await docClient.send(new GetCommand({
+        TableName: TABLES.READING_LIST_BOOKS,
+        Key: { 
+          reading_list_id: readingListId, 
+          book_id: bookId 
+        }
+      }));
+      
+      return result.Item as ReadingListBook || null;
+    } catch (error) {
+      console.error('Error getting book in reading list:', error);
+      return null;
+    }
+  },
+
+  // Update a book in a reading list
+  updateBookInList: async (readingListId: string, bookId: string, data: UpdateBookInListData): Promise<ReadingListBook | null> => {
+    try {
+      const book = await readingListOperations.getBookInList(readingListId, bookId);
+      if (!book) return null;
+
+      const updateData: Partial<ReadingListBook> = {
+        ...data
+      };
+
+      // Remove undefined values
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key as keyof typeof updateData] === undefined) {
+          delete updateData[key as keyof typeof updateData];
+        }
+      });
+
+      if (Object.keys(updateData).length === 0) {
+        return book;
+      }
+
+      const result = await docClient.send(new UpdateCommand({
+        TableName: TABLES.READING_LIST_BOOKS,
+        Key: { id: book.id },
+        UpdateExpression: `SET ${Object.keys(updateData).map(key => `#${key} = :${key}`).join(', ')}`,
+        ExpressionAttributeNames: Object.keys(updateData).reduce((acc, key) => {
+          acc[`#${key}`] = key;
+          return acc;
+        }, {} as Record<string, string>),
+        ExpressionAttributeValues: Object.keys(updateData).reduce((acc, key) => {
+          acc[`:${key}`] = updateData[key as keyof typeof updateData];
+          return acc;
+        }, {} as Record<string, string>),
+        ReturnValues: 'ALL_NEW'
+      }));
+
+      return result.Attributes as ReadingListBook;
+    } catch (error) {
+      console.error('Error updating book in reading list:', error);
+      return null;
+    }
+  },
+
+  // Reorder books in a reading list
+  reorderBooks: async (readingListId: string, bookIds: string[]): Promise<boolean> => {
+    try {
+      const updatePromises = bookIds.map((bookId, index) => {
+        return docClient.send(new UpdateCommand({
+          TableName: TABLES.READING_LIST_BOOKS,
+          Key: { id: bookId },
+          UpdateExpression: 'SET position = :position',
+          ExpressionAttributeValues: {
+            ':position': index + 1
+          }
+        }));
+      });
+      
+      await Promise.all(updatePromises);
+      return true;
+    } catch (error) {
+      console.error('Error reordering books in reading list:', error);
+      return false;
     }
   }
 };

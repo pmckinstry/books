@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userBookAssociationOperations, bookOperations } from '@/lib/database';
+import { userBookAssociationOperations, bookOperations } from '@/lib/database-factory';
 
 interface BookRecommendation {
   title: string;
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     // Get user ID from request using the same pattern as other API routes
     const cookieHeader = request.headers.get('cookie');
-    let userId: number | null = null;
+    let userId: string | null = null;
     
     if (cookieHeader) {
       const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       
       // Try to get user ID from a custom cookie
       if (cookies['user-id']) {
-        userId = parseInt(cookies['user-id']);
+        userId = cookies['user-id'];
       }
     }
     
@@ -46,27 +46,29 @@ export async function GET(request: NextRequest) {
     // For now, if we can't get the user ID, we'll use a default
     // This should be replaced with proper authentication
     if (!userId) {
-      // Return an error in production, but for demo purposes, use user ID 1
-      console.warn('No user ID found in request, using default user ID 1');
-      userId = 1;
+      // Return an error in production, but for demo purposes, use admin user ID
+      console.warn('No user ID found in request, using default user ID admin-user-id');
+      userId = 'admin-user-id';
     }
 
     console.log('Recommendations API - Using userId:', userId);
 
     // Get user's read books with ratings and genres
-    const userAssociations = userBookAssociationOperations.getByUser(userId);
+    const userAssociations = await userBookAssociationOperations.getByUser(userId);
     console.log('Recommendations API - Total user associations found:', userAssociations.length);
     
-    const readBooks = userAssociations
+    const readBooksPromises = userAssociations
       .filter(uba => uba.read_status === 'read')
-      .map(uba => {
-        const book = bookOperations.getById(uba.book_id);
+      .map(async uba => {
+        const book = await bookOperations.getById(uba.book_id);
         return book ? {
           ...book,
           rating: uba.rating,
           comments: uba.comments
         } : null;
-      })
+      });
+    
+    const readBooks = (await Promise.all(readBooksPromises))
       .filter(Boolean) as Array<{
         id: number;
         title: string;
@@ -116,7 +118,8 @@ export async function GET(request: NextRequest) {
       .map(([author]) => author);
 
     // Get all books and filter out those already read
-    const allBooks = bookOperations.getAll();
+    // Use a more efficient approach by limiting the initial fetch
+    const allBooks = await bookOperations.getAll(100); // Limit to 100 books for recommendations
     const readBookIds = new Set(readBooks.map(b => b.id));
     const recommendedBooks = allBooks.filter(b => !readBookIds.has(b.id));
 

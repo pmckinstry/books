@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ReadingList } from '@/lib/database';
+import { ReadingList } from '@/lib/database-factory';
 import ReadingListCard from '@/components/ReadingListCard';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -56,7 +56,7 @@ export default function ReadingListsPage() {
     loadData();
   }, [loadData]);
 
-  const handleDelete = (deletedId: number) => {
+  const handleDelete = (deletedId: string) => {
     setReadingLists(prev => prev.filter(list => list.id !== deletedId));
   };
 

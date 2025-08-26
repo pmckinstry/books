@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import AuthGuard from '@/components/AuthGuard';
 import EditReadingListForm from '@/components/EditReadingListForm';
-import { readingListOperations } from '@/lib/database';
+import { readingListOperations } from '@/lib/database-factory';
 
 interface EditReadingListPageProps {
   params: Promise<{ id: string }>;
@@ -9,11 +9,7 @@ interface EditReadingListPageProps {
 
 export default async function EditReadingListPage({ params }: EditReadingListPageProps) {
   const resolvedParams = await params;
-  const readingListId = parseInt(resolvedParams.id);
-  
-  if (isNaN(readingListId)) {
-    notFound();
-  }
+  const readingListId = resolvedParams.id;
 
   const readingList = readingListOperations.getById(readingListId);
   if (!readingList) {

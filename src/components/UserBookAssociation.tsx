@@ -17,7 +17,7 @@ export default function UserBookAssociation({ bookId }: UserBookAssociationProps
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState(false);
-  const [userId, setUserId] = useState<number | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Get user ID on client side only to avoid hydration mismatch
   useEffect(() => {
@@ -64,8 +64,12 @@ export default function UserBookAssociation({ bookId }: UserBookAssociationProps
         return;
       }
 
+      // Ensure bookId is a string
+      const bookIdString = String(bookId);
+      console.log('UserBookAssociation - Fetching initial association with bookId:', bookIdString, 'type:', typeof bookIdString);
+
       try {
-        const response = await fetch(`/api/user-books/${bookId}?userId=${userId}`);
+        const response = await fetch(`/api/user-books/${bookIdString}?userId=${userId}`);
         if (response.ok) {
           const data = await response.json();
           setAssociation(data);
@@ -94,6 +98,9 @@ export default function UserBookAssociation({ bookId }: UserBookAssociationProps
     setIsLoading(true);
     setMessage('');
 
+    // Ensure bookId is a string
+    const bookIdString = String(bookId);
+
     try {
       const response = await fetch('/api/user-books', {
         method: 'POST',
@@ -102,7 +109,7 @@ export default function UserBookAssociation({ bookId }: UserBookAssociationProps
         },
         body: JSON.stringify({
           user_id: userId,
-          book_id: bookId,
+          book_id: bookIdString,
           read_status: readStatus,
           rating: rating > 0 ? rating : undefined,
           comments: comments.trim() || undefined,
@@ -134,8 +141,11 @@ export default function UserBookAssociation({ bookId }: UserBookAssociationProps
     setIsLoading(true);
     setMessage('');
 
+    // Ensure bookId is a string
+    const bookIdString = String(bookId);
+
     try {
-      const response = await fetch(`/api/user-books/${bookId}?userId=${userId}`, {
+      const response = await fetch(`/api/user-books/${bookIdString}?userId=${userId}`, {
         method: 'DELETE',
       });
 

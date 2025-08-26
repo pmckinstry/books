@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
-import { userOperations } from './database';
+import { userOperations } from './database-factory';
 
 // Server-side function to get user ID from request
-export function getUserIdFromRequest(request: NextRequest): number | null {
+export function getUserIdFromRequest(request: NextRequest): string | null {
   // For now, we'll use a simple approach with headers
   // In a real app, you'd use JWT tokens or session cookies
   const authHeader = request.headers.get('authorization');
@@ -17,7 +17,7 @@ export function getUserIdFromRequest(request: NextRequest): number | null {
 }
 
 // Server-side function to validate user exists
-export function validateUser(userId: number): boolean {
+export function validateUser(userId: string): boolean {
   if (!userId) return false;
   
   try {

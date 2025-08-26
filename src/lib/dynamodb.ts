@@ -9,8 +9,10 @@ const dynamoConfig: {
     accessKeyId: string;
     secretAccessKey: string;
   };
+  maxAttempts?: number;
 } = {
-  region: process.env.AWS_REGION || 'us-east-1'
+  region: process.env.AWS_REGION || 'us-east-1',
+  maxAttempts: 3 // Retry failed requests up to 3 times
 };
 
 // For local development, use DynamoDB Local
@@ -165,13 +167,26 @@ export const TABLE_SCHEMAS = {
     ],
     AttributeDefinitions: [
       { AttributeName: 'id', AttributeType: 'S' },
-      { AttributeName: 'user_id', AttributeType: 'S' }
+      { AttributeName: 'user_id', AttributeType: 'S' },
+      { AttributeName: 'name', AttributeType: 'S' }
     ],
     GlobalSecondaryIndexes: [
       {
         IndexName: 'user_id-index',
         KeySchema: [
           { AttributeName: 'user_id', KeyType: 'HASH' }
+        ],
+        Projection: { ProjectionType: 'ALL' },
+        ProvisionedThroughput: {
+          ReadCapacityUnits: 5,
+          WriteCapacityUnits: 5
+        }
+      },
+      {
+        IndexName: 'user_name-unique-index',
+        KeySchema: [
+          { AttributeName: 'user_id', KeyType: 'HASH' },
+          { AttributeName: 'name', KeyType: 'RANGE' }
         ],
         Projection: { ProjectionType: 'ALL' },
         ProvisionedThroughput: {

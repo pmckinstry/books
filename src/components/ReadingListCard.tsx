@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { ReadingList } from '@/lib/database';
+import { ReadingList } from '@/lib/database-factory';
 
 interface ReadingListCardProps {
   readingList: ReadingList;
-  onDelete?: (id: number) => void;
+  onDelete?: (id: string) => void;
 }
 
 export default function ReadingListCard({ readingList, onDelete }: ReadingListCardProps) {

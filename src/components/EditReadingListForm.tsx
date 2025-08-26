@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 
 interface EditReadingListFormProps {
-  readingListId: number;
+  readingListId: string;
 }
 
 export default function EditReadingListForm({ readingListId }: EditReadingListFormProps) {

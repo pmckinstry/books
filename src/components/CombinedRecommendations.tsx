@@ -13,8 +13,8 @@ interface Recommendation {
 }
 
 interface CombinedRecommendationsProps {
-  userId?: number;
-  readingListId?: number;
+  userId?: string;
+  readingListId?: string;
   bookTitle?: string;
   bookAuthor?: string;
 }

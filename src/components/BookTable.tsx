@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BookWithGenres } from "@/lib/database";
+import { BookWithGenres } from "@/lib/database-factory";
 
 interface BookTableProps {
   books: BookWithGenres[];

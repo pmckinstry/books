@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 // import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BookWithGenres } from '@/lib/database';
+import { BookWithGenres } from '@/lib/database-factory';
 import AuthGuard from '@/components/AuthGuard';
 import BookCoverImage from '@/components/BookCoverImage';
 
@@ -12,7 +12,7 @@ interface AddBooksToReadingListPageProps {
 }
 
 export default function AddBooksToReadingListPage({ params }: AddBooksToReadingListPageProps) {
-  const [readingListId, setReadingListId] = useState<number | null>(null);
+  const [readingListId, setReadingListId] = useState<string | null>(null);
   const [readingListName, setReadingListName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [books, setBooks] = useState<BookWithGenres[]>([]);
@@ -20,16 +20,16 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [selectedBooks, setSelectedBooks] = useState<Set<number>>(new Set());
+  const [selectedBooks, setSelectedBooks] = useState<Set<string>>(new Set());
   const [isAddingBooks, setIsAddingBooks] = useState(false);
-  const [booksInList, setBooksInList] = useState<Set<number>>(new Set());
+  const [booksInList, setBooksInList] = useState<Set<string>>(new Set());
   // const router = useRouter();
 
   useEffect(() => {
     const loadReadingList = async () => {
       try {
         const resolvedParams = await params;
-        const id = parseInt(resolvedParams.id);
+        const id = resolvedParams.id;
         setReadingListId(id);
 
         const response = await fetch(`/api/reading-lists/${id}`, {
@@ -42,7 +42,7 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
           const data = await response.json();
           setReadingListName(data.readingList.name);
           // Store the books that are already in the list
-          const existingBookIds = new Set<number>(data.readingList.books.map((book: {id: string | number}) => Number(book.id)));
+          const existingBookIds = new Set<string>(data.readingList.books.map((book: {id: string}) => book.id));
           setBooksInList(existingBookIds);
         } else {
           setError('Failed to load reading list');
@@ -93,7 +93,7 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
     setError('');
   };
 
-  const toggleBookSelection = (bookId: number) => {
+  const toggleBookSelection = (bookId: string) => {
     // Don't allow selection if book is already in the list
     if (booksInList.has(bookId)) return;
 
@@ -157,7 +157,7 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
     }
   };
 
-  const isBookInList = (bookId: number) => {
+  const isBookInList = (bookId: string) => {
     return booksInList.has(bookId);
   };
 
@@ -360,7 +360,7 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
         )}
 
         {/* No Results */}
-        {!isLoading && !isSearching && searchTerm.trim() && books.length === 0 && (
+        {!isSearching && searchTerm.trim() && books.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -375,7 +375,7 @@ export default function AddBooksToReadingListPage({ params }: AddBooksToReadingL
         )}
 
         {/* Initial State */}
-        {!isLoading && !isSearching && !searchTerm.trim() && (
+        {!isSearching && !searchTerm.trim() && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readingListOperations } from '@/lib/database';
+import { readingListOperations } from '@/lib/database-factory';
 
 // Simple auth check - in a real app you'd use proper JWT/session auth
 async function getCurrentUser(request: NextRequest) {
@@ -10,7 +10,7 @@ async function getCurrentUser(request: NextRequest) {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     // This is a placeholder - in a real app you'd decode a JWT token
     // For now, we'll return a default user ID (admin user)
-    return { id: 1 }; // Assuming admin user has ID 1
+    return { id: 'admin-user-id' }; // Assuming admin user has UUID
   }
   
   return null;
@@ -28,9 +28,9 @@ export async function GET(request: NextRequest) {
 
     let readingLists;
     if (type === 'public') {
-      readingLists = readingListOperations.getPublic();
+      readingLists = await (readingListOperations as any).getPublic();
     } else {
-      readingLists = readingListOperations.getByUser(user.id);
+      readingLists = await (readingListOperations as any).getByUser(user.id);
     }
 
     return NextResponse.json({ readingLists });
@@ -54,12 +54,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    const readingList = readingListOperations.create({
+    const readingList = await readingListOperations.create({
       name: name.trim(),
       description: description?.trim(),
       is_public: is_public || false,
       user_id: user.id
     });
+
+    if (!readingList) {
+      return NextResponse.json({ 
+        error: 'A reading list with this name already exists' 
+      }, { status: 409 });
+    }
 
     return NextResponse.json({ readingList }, { status: 201 });
   } catch (error) {

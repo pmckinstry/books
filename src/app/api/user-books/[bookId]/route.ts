@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userBookAssociationOperations } from '@/lib/database';
+import { userBookAssociationOperations } from '@/lib/database-factory';
 
 // GET /api/user-books/[bookId] - Get user's association for a specific book
 export async function GET(
@@ -17,8 +17,8 @@ export async function GET(
       );
     }
 
-    const userIdNum = parseInt(userId);
-    if (isNaN(userIdNum)) {
+    // Validate userId is a non-empty string
+    if (userId.trim() === '') {
       return NextResponse.json(
         { error: 'Invalid user ID' },
         { status: 400 }
@@ -26,15 +26,17 @@ export async function GET(
     }
 
     const resolvedParams = await params;
-    const bookId = parseInt(resolvedParams.bookId);
-    if (isNaN(bookId)) {
+    const bookId = resolvedParams.bookId;
+    
+    // Validate bookId is a non-empty string
+    if (bookId.trim() === '') {
       return NextResponse.json(
         { error: 'Invalid book ID' },
         { status: 400 }
       );
     }
 
-    const association = userBookAssociationOperations.getByUserAndBook(userIdNum, bookId);
+    const association = await userBookAssociationOperations.getByUserAndBook(userId, bookId);
     if (!association) {
       return NextResponse.json(
         { error: 'Association not found' },
@@ -68,8 +70,8 @@ export async function PUT(
       );
     }
 
-    const userIdNum = parseInt(user_id);
-    if (isNaN(userIdNum)) {
+    // Validate user_id is a non-empty string
+    if (user_id.trim() === '') {
       return NextResponse.json(
         { error: 'Invalid user ID' },
         { status: 400 }
@@ -77,8 +79,10 @@ export async function PUT(
     }
 
     const resolvedParams = await params;
-    const bookId = parseInt(resolvedParams.bookId);
-    if (isNaN(bookId)) {
+    const bookId = resolvedParams.bookId;
+    
+    // Validate bookId is a non-empty string
+    if (bookId.trim() === '') {
       return NextResponse.json(
         { error: 'Invalid book ID' },
         { status: 400 }
@@ -107,7 +111,7 @@ export async function PUT(
       comments
     };
 
-    const association = userBookAssociationOperations.update(userIdNum, bookId, updateData);
+    const association = await userBookAssociationOperations.update(user_id, bookId, updateData);
     if (!association) {
       return NextResponse.json(
         { error: 'Association not found' },
@@ -141,8 +145,8 @@ export async function DELETE(
       );
     }
 
-    const userIdNum = parseInt(userId);
-    if (isNaN(userIdNum)) {
+    // Validate userId is a non-empty string
+    if (userId.trim() === '') {
       return NextResponse.json(
         { error: 'Invalid user ID' },
         { status: 400 }
@@ -150,15 +154,17 @@ export async function DELETE(
     }
 
     const resolvedParams = await params;
-    const bookId = parseInt(resolvedParams.bookId);
-    if (isNaN(bookId)) {
+    const bookId = resolvedParams.bookId;
+    
+    // Validate bookId is a non-empty string
+    if (bookId.trim() === '') {
       return NextResponse.json(
         { error: 'Invalid book ID' },
         { status: 400 }
       );
     }
 
-    const success = userBookAssociationOperations.delete(userIdNum, bookId);
+    const success = await userBookAssociationOperations.delete(userId, bookId);
     if (!success) {
       return NextResponse.json(
         { error: 'Association not found' },

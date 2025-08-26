@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userBookAssociationOperations } from '@/lib/database';
+import { userBookAssociationOperations } from '@/lib/database-factory';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     // In a real app, you'd use proper session management or JWT tokens
     const cookieHeader = request.headers.get('cookie');
-    let userId: number | null = null;
+    let userId: string | number | null = null;
     
     if (cookieHeader) {
       const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
@@ -46,12 +46,15 @@ export async function GET(request: NextRequest) {
     // For now, if we can't get the user ID, we'll use a default
     // This should be replaced with proper authentication
     if (!userId) {
-      // Return an error in production, but for demo purposes, use user ID 1
-      console.warn('No user ID found in request, using default user ID 1');
-      userId = 1;
+      // Return an error in production, but for demo purposes, use admin user ID
+      console.warn('No user ID found in request, using default user ID admin-user-id');
+      userId = 'admin-user-id';
+    } else {
+      // Convert number to string for DynamoDB
+      userId = userId.toString();
     }
 
-    const result = userBookAssociationOperations.getReadBooksWithPagination(
+    const result = await userBookAssociationOperations.getReadBooksWithPagination(
       userId,
       page,
       limit,

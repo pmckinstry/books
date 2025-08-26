@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readingListOperations } from '@/lib/database';
+import { readingListOperations } from '@/lib/database-factory';
 
 // Simple auth check - in a real app you'd use proper JWT/session auth
 async function getCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    return { id: 1 }; // Assuming admin user has ID 1
+    return { id: 'admin-user-id' }; // Assuming admin user has UUID
   }
   
   return null;
@@ -23,13 +23,9 @@ export async function POST(
     }
 
     const resolvedParams = await params;
-    const readingListId = parseInt(resolvedParams.id);
-    
-    if (isNaN(readingListId)) {
-      return NextResponse.json({ error: 'Invalid reading list ID' }, { status: 400 });
-    }
+    const readingListId = resolvedParams.id;
 
-    const readingList = readingListOperations.getById(readingListId);
+    const readingList = await readingListOperations.getById(readingListId);
     if (!readingList) {
       return NextResponse.json({ error: 'Reading list not found' }, { status: 404 });
     }
@@ -41,13 +37,13 @@ export async function POST(
     const body = await request.json();
     const { book_id, position, notes } = body;
 
-    if (!book_id || isNaN(book_id)) {
+    if (!book_id) {
       return NextResponse.json({ error: 'Valid book ID is required' }, { status: 400 });
     }
 
-    const readingListBook = readingListOperations.addBook({
+    const readingListBook = await readingListOperations.addBook({
       reading_list_id: readingListId,
-      book_id: parseInt(book_id),
+      book_id: book_id,
       position,
       notes
     });
@@ -74,13 +70,9 @@ export async function DELETE(
     }
 
     const resolvedParams = await params;
-    const readingListId = parseInt(resolvedParams.id);
-    
-    if (isNaN(readingListId)) {
-      return NextResponse.json({ error: 'Invalid reading list ID' }, { status: 400 });
-    }
+    const readingListId = resolvedParams.id;
 
-    const readingList = readingListOperations.getById(readingListId);
+    const readingList = await readingListOperations.getById(readingListId);
     if (!readingList) {
       return NextResponse.json({ error: 'Reading list not found' }, { status: 404 });
     }
@@ -92,11 +84,11 @@ export async function DELETE(
     const { searchParams } = new URL(request.url);
     const bookId = searchParams.get('book_id');
 
-    if (!bookId || isNaN(parseInt(bookId))) {
+    if (!bookId) {
       return NextResponse.json({ error: 'Valid book ID is required' }, { status: 400 });
     }
 
-    const success = readingListOperations.removeBook(readingListId, parseInt(bookId));
+    const success = await (readingListOperations as any).removeBook(readingListId, bookId);
     if (!success) {
       return NextResponse.json({ error: 'Failed to remove book from reading list' }, { status: 500 });
     }

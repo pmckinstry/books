@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import RecommendationsList from './RecommendationsList';
 
 interface ReadingListRecommendationsProps {
-  readingListId: number;
+  readingListId: string;
 }
 
 export default function ReadingListRecommendations({ readingListId }: ReadingListRecommendationsProps) {

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readingListOperations } from '@/lib/database';
+import { readingListOperations } from '@/lib/database-factory';
 
 // Simple auth check - in a real app you'd use proper JWT/session auth
 async function getCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    return { id: 1 }; // Assuming admin user has ID 1
+    return { id: 'admin-user-id' }; // Assuming admin user has UUID
   }
   
   return null;
@@ -18,13 +18,9 @@ export async function GET(
 ) {
   try {
     const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid reading list ID' }, { status: 400 });
-    }
+    const id = resolvedParams.id;
 
-    const readingList = readingListOperations.getByIdWithBooks(id);
+    const readingList = await readingListOperations.getByIdWithBooks(id);
     if (!readingList) {
       return NextResponse.json({ error: 'Reading list not found' }, { status: 404 });
     }
@@ -47,13 +43,9 @@ export async function PUT(
     }
 
     const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid reading list ID' }, { status: 400 });
-    }
+    const id = resolvedParams.id;
 
-    const readingList = readingListOperations.getById(id);
+    const readingList = await readingListOperations.getById(id);
     if (!readingList) {
       return NextResponse.json({ error: 'Reading list not found' }, { status: 404 });
     }
@@ -65,7 +57,7 @@ export async function PUT(
     const body = await request.json();
     const { name, description, is_public } = body;
 
-    const updatedReadingList = readingListOperations.update(id, {
+    const updatedReadingList = await readingListOperations.update(id, {
       name: name?.trim(),
       description: description?.trim(),
       is_public: is_public !== undefined ? Boolean(is_public) : undefined
@@ -93,13 +85,9 @@ export async function DELETE(
     }
 
     const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
-    
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid reading list ID' }, { status: 400 });
-    }
+    const id = resolvedParams.id;
 
-    const readingList = readingListOperations.getById(id);
+    const readingList = await readingListOperations.getById(id);
     if (!readingList) {
       return NextResponse.json({ error: 'Reading list not found' }, { status: 404 });
     }
@@ -108,7 +96,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const success = readingListOperations.delete(id);
+    const success = await readingListOperations.delete(id);
     if (!success) {
       return NextResponse.json({ error: 'Failed to delete reading list' }, { status: 500 });
     }

@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BookCoverImage from '@/components/BookCoverImage';
-import { BookWithGenres, ReadingListBook } from '@/lib/database';
+import { BookWithGenres, ReadingListBook } from '@/lib/database-factory';
 
 interface ReadingListBookItemProps {
   book: BookWithGenres & { reading_list_book: ReadingListBook };
-  readingListId: number;
+  readingListId: string;
 }
 
 export default function ReadingListBookItem({ book, readingListId }: ReadingListBookItemProps) {

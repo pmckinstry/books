@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userOperations } from '@/lib/database';
+import { userOperations } from '@/lib/database-factory';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user from database
-    const user = await userOperations.getUserById(userId);
+    const user = await userOperations.getById(userId);
     
     if (!user) {
       return NextResponse.json(
@@ -72,14 +72,32 @@ export async function PUT(request: NextRequest) {
     if (nickname.length > 50) {
       return NextResponse.json(
         { error: 'Nickname must be less than 50 characters long' },
-        { status: 400 }
+        { status: 500 }
       );
     }
 
-    // For now, we'll update the admin user (ID: 1) as a placeholder
-    // In a real app, you'd get the user ID from the session/token
-    // This is a simplified implementation for demonstration
-    const updatedUser = await userOperations.updateProfile(1, { nickname });
+    // Get user ID from authorization header
+    const authHeader = request.headers.get('authorization');
+    let userId: string | null = null;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decoded = JSON.parse(atob(token));
+        userId = decoded.userId;
+      } catch (error) {
+        console.error('Error parsing auth token:', error);
+      }
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const updatedUser = await userOperations.updateProfile(userId, { nickname });
 
     if (!updatedUser) {
       return NextResponse.json(

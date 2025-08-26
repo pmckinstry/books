@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { readingListOperations } from '@/lib/database';
+import { readingListOperations } from '@/lib/database-factory';
 import AuthGuard from '@/components/AuthGuard';
 import ReadingListBookItem from '@/components/ReadingListBookItem';
 import CombinedRecommendations from '@/components/CombinedRecommendations';
@@ -11,13 +11,9 @@ interface ReadingListDetailPageProps {
 
 export default async function ReadingListDetailPage({ params }: ReadingListDetailPageProps) {
   const resolvedParams = await params;
-  const readingListId = parseInt(resolvedParams.id);
-  
-  if (isNaN(readingListId)) {
-    notFound();
-  }
+  const readingListId = resolvedParams.id;
 
-  const readingList = readingListOperations.getByIdWithBooks(readingListId);
+  const readingList = await readingListOperations.getByIdWithBooks(readingListId);
   if (!readingList) {
     notFound();
   }
@@ -90,7 +86,7 @@ export default async function ReadingListDetailPage({ params }: ReadingListDetai
             <h2 className="text-xl font-semibold text-gray-900">Books in this list</h2>
           </div>
           
-          {readingList.books.length === 0 ? (
+          {(!readingList.books || readingList.books.length === 0) ? (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-4">
                 <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +108,7 @@ export default async function ReadingListDetailPage({ params }: ReadingListDetai
             <div className="divide-y divide-gray-200">
               {readingList.books.map((book) => (
                 <ReadingListBookItem 
-                  key={book.id} 
+                  key={book.reading_list_book.id} 
                   book={book} 
                   readingListId={readingList.id}
                 />
@@ -124,8 +120,8 @@ export default async function ReadingListDetailPage({ params }: ReadingListDetai
         {/* Recommendations Section */}
         <CombinedRecommendations 
           readingListId={readingList.id}
-          bookTitle={readingList.books.length > 0 ? readingList.books[0].title : undefined}
-          bookAuthor={readingList.books.length > 0 ? readingList.books[0].author : undefined}
+          bookTitle={readingList.books && readingList.books.length > 0 ? readingList.books[0].title : undefined}
+          bookAuthor={readingList.books && readingList.books.length > 0 ? readingList.books[0].author : undefined}
         />
       </div>
     </AuthGuard>

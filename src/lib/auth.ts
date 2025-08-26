@@ -1,7 +1,7 @@
 
 
 export interface AuthUser {
-  id: number;
+  id: string;
   username: string;
   nickname?: string;
   created_at: string;
@@ -65,16 +65,25 @@ export function setCurrentUser(user: AuthUser): void {
   if (typeof window === 'undefined') return;
   
   try {
+    console.log('setCurrentUser - Storing user data:', {
+      id: user.id,
+      idType: typeof user.id,
+      username: user.username
+    });
+    
     const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days
     const storedData: StoredUserData = {
       user,
       timestamp: Date.now(),
       expiresAt
     };
+    
+    console.log('setCurrentUser - Stored data structure:', storedData);
     localStorage.setItem('user', JSON.stringify(storedData));
     
     // Dispatch custom event to notify components of auth state change
     window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user } }));
+    console.log('setCurrentUser - User data stored successfully and event dispatched');
   } catch (error) {
     console.error('Error setting user in localStorage:', error);
   }
@@ -100,13 +109,13 @@ export function isAuthenticated(): boolean {
 }
 
 // Get user ID - returns null on server, actual ID on client
-export function getCurrentUserId(): number | null {
+export function getCurrentUserId(): string | null {
   const user = getCurrentUser();
   return user?.id || null;
 }
 
 // Client-side only function to get user ID safely
-export function getCurrentUserIdClient(): number | null {
+export function getCurrentUserIdClient(): string | null {
   if (typeof window === 'undefined') return null;
   return getCurrentUserId();
 }
