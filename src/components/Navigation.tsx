@@ -179,7 +179,7 @@ export default function Navigation() {
               </Link>
               <button
                 onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded transition-colors"
+                className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-3 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium"
               >
                 Logout
               </button>
@@ -194,7 +194,7 @@ export default function Navigation() {
               </Link>
               <Link 
                 href="/register" 
-                className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded transition-colors"
+                className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-3 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium"
               >
                 Register
               </Link>

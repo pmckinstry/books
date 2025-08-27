@@ -24,9 +24,12 @@ export default async function ReadingListDetailPage({ params }: ReadingListDetai
         <div className="mb-6">
           <Link 
             href="/reading-lists" 
-            className="text-blue-600 hover:text-blue-800 mb-4 inline-block"
+            className="text-gray-600 hover:text-gray-800 mb-4 inline-block transition-colors duration-200 flex items-center space-x-2"
           >
-            ← Back to Reading Lists
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span>Back to Reading Lists</span>
           </Link>
         </div>
 
@@ -66,15 +69,21 @@ export default async function ReadingListDetailPage({ params }: ReadingListDetai
             <div className="flex space-x-3">
               <Link
                 href={`/reading-lists/${readingList.id}/edit`}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium flex items-center space-x-2"
               >
-                Edit List
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Edit List</span>
               </Link>
               <Link
                 href={`/reading-lists/${readingList.id}/add-books`}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+                className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium flex items-center space-x-2"
               >
-                Add Books
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>Add Books</span>
               </Link>
             </div>
           </div>
@@ -99,9 +108,12 @@ export default async function ReadingListDetailPage({ params }: ReadingListDetai
               </p>
               <Link
                 href={`/reading-lists/${readingList.id}/add-books`}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium flex items-center space-x-2"
               >
-                Add Your First Book
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>Add Your First Book</span>
               </Link>
             </div>
           ) : (

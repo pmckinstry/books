@@ -49,13 +49,13 @@ export default function BookTable({ books }: BookTableProps) {
     
     if (currentSortOrder === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
@@ -157,7 +157,7 @@ export default function BookTable({ books }: BookTableProps) {
                         <Link
                           key={genre.id}
                           href={`/genres/${genre.id}`}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {genre.name}
@@ -169,7 +169,7 @@ export default function BookTable({ books }: BookTableProps) {
                   <div className="flex items-center space-x-3">
                     <Link 
                       href={`/books/${book.id}`}
-                      className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded hover:bg-blue-50"
+                      className="text-gray-600 hover:text-gray-800 transition-colors p-1 rounded hover:bg-gray-100"
                       title="View book details"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,7 +179,7 @@ export default function BookTable({ books }: BookTableProps) {
                     </Link>
                     <Link 
                       href={`/books/${book.id}/edit`}
-                      className="text-green-600 hover:text-green-900 transition-colors p-1 rounded hover:bg-green-50"
+                      className="text-gray-600 hover:text-gray-800 transition-colors p-1 rounded hover:bg-gray-100"
                       title="Edit book"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,7 +188,7 @@ export default function BookTable({ books }: BookTableProps) {
                     </Link>
                     <Link 
                       href={`/books/${book.id}/delete`}
-                      className="text-red-600 hover:text-red-900 transition-colors p-1 rounded hover:bg-red-50"
+                      className="text-gray-600 hover:text-gray-800 transition-colors p-1 rounded hover:bg-gray-100"
                       title="Delete book"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

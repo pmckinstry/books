@@ -179,7 +179,7 @@ export default function ReadBooksList() {
               />
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-r-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 shadow-sm hover:shadow-md font-medium"
               >
                 Search
               </button>
@@ -196,7 +196,7 @@ export default function ReadBooksList() {
             {!searchTerm && (
               <Link
                 href="/books"
-                className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="mt-4 inline-block px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md font-medium"
               >
                 Browse All Books
               </Link>

@@ -1,12 +1,169 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Professional Color Palette */
+  --background: #FAFAFA;
+  --foreground: #111827;
+  
+  /* Primary Colors */
+  --primary: #1E40AF;
+  --primary-hover: #1D4ED8;
+  --primary-light: #DBEAFE;
+  
+  /* Neutral Colors */
+  --card-bg: #FFFFFF;
+  --border: #E5E7EB;
+  --border-hover: #D1D5DB;
+  
+  /* Text Colors */
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  
+  /* Semantic Colors */
+  --success: #059669;
+  --success-light: #D1FAE5;
+  --success-hover: #047857;
+  
+  --warning: #D97706;
+  --warning-light: #FEF3C7;
+  --warning-hover: #B45309;
+  
+  --error: #DC2626;
+  --error-light: #FEE2E2;
+  --error-hover: #B91C1C;
+  
+  --info: #2563EB;
+  --info-light: #DBEAFE;
+  --info-hover: #1D4ED8;
+  
+  /* Interactive States */
+  --hover-bg: #F9FAFB;
+  --focus-ring: #3B82F6;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+}
+
+/* Professional Button Styles */
+.btn-primary {
+  @apply bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+.btn-secondary {
+  @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+}
+
+.btn-success {
+  @apply bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+}
+
+/* Professional Card Styles */
+.card {
+  @apply bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200;
+}
+
+.card-header {
+  @apply px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-lg;
+}
+
+.card-body {
+  @apply px-6 py-4;
+}
+
+/* Professional Form Styles */
+.form-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-2;
+}
+
+.form-error {
+  @apply mt-1 text-sm text-red-600;
+}
+
+.form-success {
+  @apply mt-1 text-sm text-green-600;
+}
+
+/* Professional Table Styles */
+.table {
+  @apply min-w-full divide-y divide-gray-200;
+}
+
+.table-header {
+  @apply bg-gray-50;
+}
+
+.table-header-cell {
+  @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+}
+
+.table-body {
+  @apply bg-white divide-y divide-gray-200;
+}
+
+.table-row {
+  @apply hover:bg-gray-50 transition-colors duration-150;
+}
+
+.table-cell {
+  @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+}
+
+/* Professional Badge Styles */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-primary {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.badge-success {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-warning {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.badge-error {
+  @apply bg-red-100 text-red-800;
+}
+
+/* Professional Alert Styles */
+.alert {
+  @apply p-4 rounded-md border;
+}
+
+.alert-success {
+  @apply bg-green-50 border-green-200 text-green-700;
+}
+
+.alert-warning {
+  @apply bg-yellow-50 border-yellow-200 text-yellow-700;
+}
+
+.alert-error {
+  @apply bg-red-50 border-red-200 text-red-700;
+}
+
+.alert-info {
+  @apply bg-blue-50 border-blue-200 text-blue-700;
 }

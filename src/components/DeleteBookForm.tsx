@@ -129,7 +129,7 @@ export default function DeleteBookForm({ bookId }: DeleteBookFormProps) {
             <button
               onClick={handleDelete}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-6 py-2 rounded-lg transition-colors"
+              className="bg-gray-800 hover:bg-gray-900 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium"
             >
               {isDeleting ? 'Deleting...' : 'Delete Book'}
             </button>

@@ -128,7 +128,7 @@ export default function RegisterForm() {
                 required
                 value={formData.username}
                 onChange={handleChange}
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-gray-500 focus:border-gray-500 focus:z-10 sm:text-sm ${
                   errors.username ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Username"
@@ -148,7 +148,7 @@ export default function RegisterForm() {
                 required
                 value={formData.nickname}
                 onChange={handleChange}
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 focus:z-10 sm:text-sm ${
                   errors.nickname ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Nickname"
@@ -168,7 +168,7 @@ export default function RegisterForm() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 focus:z-10 sm:text-sm ${
                   errors.password ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Password"
@@ -188,7 +188,7 @@ export default function RegisterForm() {
                 required
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm ${
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-gray-500 focus:border-gray-500 focus:z-10 sm:text-sm ${
                   errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Confirm Password"
@@ -209,7 +209,7 @@ export default function RegisterForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:bg-gray-400 transition-all duration-200 shadow-sm hover:shadow-md"
             >
               {isSubmitting ? 'Creating account...' : 'Create account'}
             </button>

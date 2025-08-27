@@ -281,7 +281,7 @@ export default function UserBookAssociation({ bookId }: UserBookAssociationProps
           <button
             onClick={handleSave}
             disabled={isLoading}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex-1 bg-gray-800 hover:bg-gray-900 text-white py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md font-medium"
           >
             {isLoading ? 'Saving...' : 'Save Progress'}
           </button>

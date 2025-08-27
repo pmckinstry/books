@@ -195,7 +195,7 @@ export default function GenreView({ genreId }: GenreViewProps) {
           <div className="flex gap-4 pt-6 border-t border-gray-200">
             <Link
               href={`/genres/${genreId}/edit`}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium"
             >
               Edit Genre
             </Link>
