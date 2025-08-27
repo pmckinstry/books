@@ -138,7 +138,7 @@ Key components have been updated to use the new color scheme:
 - `Navigation.tsx` - Logout and Register buttons
 - `books/page.tsx` - Add Book and Add from URL buttons
 - `reading-lists/page.tsx` - Create New List buttons
-- `ReadingListCard.tsx` - View List button
+- `ReadingListItem.tsx` - Action icons
 - `CreateBookForm.tsx` - Create Book and Cancel buttons
 - `globals.css` - Global color definitions and utility classes
 
