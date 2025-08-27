@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ReadingList } from '@/lib/database-factory';
-import ReadingListCard from '@/components/ReadingListCard';
+import ReadingListItem from '@/components/ReadingListItem';
 import AuthGuard from '@/components/AuthGuard';
 
 export default function ReadingListsPage() {
@@ -150,15 +150,16 @@ export default function ReadingListsPage() {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <ol className="list-decimal pl-6 space-y-4">
                 {readingLists.map((readingList) => (
-                  <ReadingListCard
-                    key={readingList.id}
-                    readingList={readingList}
-                    onDelete={handleDelete}
-                  />
+                  <li key={readingList.id}>
+                    <ReadingListItem
+                      readingList={readingList}
+                      onDelete={handleDelete}
+                    />
+                  </li>
                 ))}
-              </div>
+              </ol>
             )}
           </div>
         ) : (
@@ -168,18 +169,17 @@ export default function ReadingListsPage() {
                 <p className="text-gray-500">No public reading lists available.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <ol className="list-decimal pl-6 space-y-4">
                 {publicLists.map((readingList) => (
-                  <ReadingListCard
-                    key={readingList.id}
-                    readingList={readingList}
-                  />
+                  <li key={readingList.id}>
+                    <ReadingListItem readingList={readingList} />
+                  </li>
                 ))}
-              </div>
+              </ol>
             )}
           </div>
         )}
       </div>
     </AuthGuard>
   );
-} 
+}
