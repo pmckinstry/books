@@ -17,7 +17,7 @@ Configure your preferred database by setting the `DATABASE_TYPE` environment var
 ```env
 DATABASE_TYPE=sqlite    # Default - best for development and small deployments
 DATABASE_TYPE=dynamodb  # AWS cloud solution for scalable production
-DATABASE_TYPE=firebase  # Google cloud solution with real-time features
+
 ```
 
 ## SQLite Configuration
@@ -193,123 +193,7 @@ AWS_SECRET_ACCESS_KEY=dummy
 - Set up automated backups
 - Test restore procedures regularly
 
-## Firebase Configuration
 
-### Overview
-Firebase Firestore is Google's cloud-native NoSQL document database with real-time synchronization capabilities.
-
-#### Advantages ✅
-- **Real-time Updates**: Live data synchronization across clients
-- **Offline Support**: Built-in offline capabilities
-- **Google Integration**: Works seamlessly with Google services
-- **Security Rules**: Fine-grained access control
-- **Global CDN**: Fast worldwide performance
-
-#### Limitations ❌
-- **Query Limitations**: Limited complex query support
-- **Vendor Lock-in**: Tight coupling to Google ecosystem
-- **Pricing**: Can become expensive with high read/write volumes
-- **Learning Curve**: Requires understanding of NoSQL concepts
-
-### Setup Instructions
-
-#### 1. Firebase Project Setup
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Create a new project or select existing one
-3. Enable Firestore Database
-4. Choose production mode and select a region
-
-#### 2. Authentication Setup
-1. Go to Project Settings → Service Accounts
-2. Generate a new private key
-3. Download the JSON file
-4. Store securely (never commit to version control)
-
-#### 3. Environment Configuration
-```env
-# .env.local
-DATABASE_TYPE=firebase
-
-# Firebase Configuration
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=your-service-account-email
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n"
-
-# Or use Firebase Config Object
-FIREBASE_CONFIG='{
-  "apiKey": "your-api-key",
-  "authDomain": "your-project.firebaseapp.com",
-  "projectId": "your-project-id",
-  "storageBucket": "your-project.appspot.com",
-  "messagingSenderId": "123456789",
-  "appId": "your-app-id"
-}'
-```
-
-#### 4. Security Rules
-Configure Firestore security rules:
-
-```javascript
-// firestore.rules
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Users can read/write their own data
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Books are readable by authenticated users
-    match /books/{bookId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null; // Add more specific rules as needed
-    }
-    
-    // User-specific collections
-    match /user_book_associations/{docId} {
-      allow read, write: if request.auth != null && 
-        resource.data.user_id == request.auth.uid;
-    }
-    
-    match /reading_lists/{listId} {
-      allow read, write: if request.auth != null && 
-        resource.data.user_id == request.auth.uid;
-    }
-  }
-}
-```
-
-#### 5. Data Migration (Optional)
-Migrate existing data to Firebase:
-```bash
-npm run ts-node scripts/migrate-to-firebase.ts
-```
-
-### Firebase Emulator (Development)
-
-For local development:
-
-1. **Install Firebase CLI**:
-```bash
-npm install -g firebase-tools
-```
-
-2. **Initialize Emulators**:
-```bash
-firebase init emulators
-```
-
-3. **Start Emulators**:
-```bash
-firebase emulators:start
-```
-
-4. **Configure Environment**:
-```env
-DATABASE_TYPE=firebase
-FIRESTORE_EMULATOR_HOST=localhost:8080
-FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
-```
 
 ## Data Schema & Models
 
@@ -388,17 +272,14 @@ interface ReadingList {
 #### Many-to-Many: Books ↔ Genres
 - **SQLite**: `book_genres` junction table
 - **DynamoDB**: Embedded arrays or separate table
-- **Firebase**: Subcollections or embedded arrays
 
 #### One-to-Many: User → Reading Lists
 - **SQLite**: Foreign key constraint
 - **DynamoDB**: GSI on user_id
-- **Firebase**: Subcollection under user
 
 #### Many-to-Many: Reading Lists ↔ Books
 - **SQLite**: `reading_list_books` junction table
 - **DynamoDB**: Separate table with composite keys
-- **Firebase**: Subcollection with book references
 
 ## Performance Considerations
 
@@ -417,11 +298,7 @@ CREATE INDEX idx_user_books_status ON user_book_associations(read_status);
 - **GSI Planning**: Design Global Secondary Indexes for access patterns
 - **Batch Operations**: Use batch reads/writes for efficiency
 
-### Firebase Optimization
-- **Composite Indexes**: Create indexes for multi-field queries
-- **Pagination**: Use `startAfter()` for efficient pagination
-- **Denormalization**: Duplicate data to reduce reads
-- **Security Rules**: Optimize rules for performance
+
 
 ## Migration Between Databases
 
@@ -434,14 +311,7 @@ npm run ts-node scripts/migrate-to-dynamodb.ts
 npm run ts-node scripts/create-dynamodb-tables.ts
 ```
 
-### SQLite → Firebase
-```bash
-# Full migration with data
-npm run ts-node scripts/migrate-to-firebase.ts
 
-# Test connection only
-npm run ts-node scripts/test-firebase-connection.ts
-```
 
 ### DynamoDB → SQLite (Backup)
 ```bash
@@ -468,14 +338,7 @@ aws dynamodb create-backup --table-name books-users --backup-name users-backup
 # Point-in-time recovery (enable in AWS Console)
 ```
 
-### Firebase Backups
-```bash
-# Firestore export
-gcloud firestore export gs://your-bucket/backup-folder
 
-# Using Firebase CLI
-firebase firestore:delete --all-collections --force
-```
 
 ## Troubleshooting
 
@@ -489,28 +352,25 @@ firebase firestore:delete --all-collections --force
 - **Access Denied**: Check IAM permissions
 - **Item Size**: Max 400KB per item
 
-### Common Firebase Issues
-- **Permission Denied**: Check security rules
-- **Quota Exceeded**: Monitor usage in console
-- **Offline Issues**: Configure offline persistence
+
 
 ## Cost Comparison
 
 ### Development Costs
 - **SQLite**: Free (local file storage)
 - **DynamoDB**: Free tier: 25GB storage, 200M requests/month
-- **Firebase**: Free tier: 1GB storage, 50K reads, 20K writes/day
+
 
 ### Production Costs (Estimated)
 #### Low Traffic (10K requests/day)
 - **SQLite**: $5-20/month (hosting + storage)
 - **DynamoDB**: $10-25/month
-- **Firebase**: $15-30/month
+
 
 #### High Traffic (1M requests/day)
 - **SQLite**: Not recommended (scaling issues)
 - **DynamoDB**: $100-500/month (depending on data size)
-- **Firebase**: $200-800/month
+
 
 ## Monitoring & Observability
 
@@ -528,10 +388,7 @@ SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size
 - X-Ray tracing for performance analysis
 - AWS Cost Explorer for spend tracking
 
-### Firebase Monitoring
-- Firebase Console usage dashboard
-- Cloud Monitoring for detailed metrics
-- Performance Monitoring for client-side tracking
+
 
 ## Security Best Practices
 
@@ -544,27 +401,26 @@ SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size
 ### Database-Specific Security
 - **SQLite**: File system permissions, WAL mode
 - **DynamoDB**: IAM roles, VPC endpoints, encryption
-- **Firebase**: Security rules, service account keys
+
 
 ## Support & Resources
 
 ### Documentation
 - [SQLite Documentation](https://sqlite.org/docs.html)
 - [DynamoDB Documentation](https://docs.aws.amazon.com/dynamodb/)
-- [Firebase Documentation](https://firebase.google.com/docs/firestore)
+
 
 ### Community Support
 - SQLite: [SQLite Forum](https://sqlite.org/forum/forumindex)
 - DynamoDB: [AWS Forums](https://forums.aws.amazon.com/forum.jspa?forumID=131)
-- Firebase: [Stack Overflow](https://stackoverflow.com/questions/tagged/firebase)
+
 
 ### Professional Support
 - DynamoDB: AWS Premium Support
-- Firebase: Google Cloud Support
+
 - SQLite: Professional support through vendors
 
 ---
 
 For specific setup instructions for your chosen database, see the respective setup guide files:
 - [DYNAMODB_SETUP.md](DYNAMODB_SETUP.md) - Complete guide for both local and cloud DynamoDB setup
-- [FIREBASE_SETUP.md](FIREBASE_SETUP.md) - Firebase/Firestore configuration guide

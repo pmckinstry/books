@@ -639,12 +639,12 @@ X-RateLimit-Reset: 1640995200
 
 ## Database Considerations
 
-The API supports multiple database backends (SQLite, DynamoDB, Firebase) with consistent interfaces. Some considerations:
+The API supports multiple database backends (SQLite, DynamoDB) with consistent interfaces. Some considerations:
 
-- **ID Format**: SQLite uses integer IDs, while DynamoDB and Firebase use string UUIDs
+- **ID Format**: SQLite uses integer IDs, while DynamoDB uses string UUIDs
 - **Pagination**: Pagination implementation may vary between databases
 - **Search**: Full-text search capabilities depend on the database backend
-- **Real-time**: Firebase supports real-time subscriptions (not exposed via REST API)
+
 
 ## Testing
 

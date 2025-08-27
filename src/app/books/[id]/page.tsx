@@ -17,7 +17,7 @@ export default async function BookPage({ params }: BookPageProps) {
   let bookId: string | number;
   const numericId = parseInt(id);
   
-  // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB/Firebase)
+      // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB)
   if (!isNaN(numericId) && numericId.toString() === id) {
     bookId = numericId;
   } else {

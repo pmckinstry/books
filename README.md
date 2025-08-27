@@ -94,7 +94,7 @@ The database will be automatically initialized with sample books and genres on f
 - **Database**: Multiple database options supported:
   - **SQLite** with better-sqlite3 (default for local development)
   - **DynamoDB** for AWS cloud deployments
-  - **Firebase Firestore** for Google cloud deployments
+  
 - **Styling**: Tailwind CSS 4 for modern, responsive design
 - **Authentication**: Custom secure authentication with bcrypt
 - **Testing**: Vitest with comprehensive test coverage
@@ -106,14 +106,14 @@ The application supports three database backends with a unified interface:
 
 - **SQLite** (default) - Zero configuration, perfect for development and small deployments
 - **DynamoDB** - AWS cloud solution for scalable production deployments  
-- **Firebase** - Google cloud solution with real-time synchronization
+
 
 **📊 [Complete Database Configuration Guide](docs/DATABASE.md)**
 
 #### **Quick Setup**
 ```env
 # Choose your database (defaults to sqlite)
-DATABASE_TYPE=sqlite    # or dynamodb, firebase
+DATABASE_TYPE=sqlite    # or dynamodb
 ```
 
 The application uses a database abstraction layer that provides:
@@ -226,7 +226,7 @@ books/
 
 Comprehensive documentation is available in the [`docs/`](docs/) directory:
 
-- **[Database Configuration](docs/DATABASE.md)**: Complete guide for SQLite, DynamoDB, and Firebase setup
+- **[Database Configuration](docs/DATABASE.md)**: Complete guide for SQLite and DynamoDB setup
 - **[API Reference](docs/API.md)**: Complete REST API documentation with examples
 - **[Design Document](docs/DESIGN.md)**: Complete technical architecture and design decisions
 - **[Requirements](docs/REQUIREMENTS.md)**: Detailed functional and non-functional requirements
@@ -266,10 +266,7 @@ npm start
 - AWS account with DynamoDB access
 - Proper IAM permissions configured
 
-#### **For Firebase deployments:**
-- Node.js 18+
-- Google Cloud/Firebase project
-- Service account credentials configured
+
 
 ## 🔧 Configuration
 
@@ -285,7 +282,7 @@ TASTEDIVE_API_KEY=your_tastedive_api_key
 GOOGLE_BOOKS_API_KEY=your_google_books_api_key
 ```
 
-For database-specific configuration (AWS credentials for DynamoDB, Firebase service keys, etc.), see the [Database Configuration Guide](docs/DATABASE.md).
+For database-specific configuration (AWS credentials for DynamoDB, etc.), see the [Database Configuration Guide](docs/DATABASE.md).
 
 ---
 
@@ -302,7 +299,7 @@ Key API features:
 - **Search & Filtering**: Advanced search capabilities across all resources
 - **Rate Limiting**: Protection against API abuse
 - **Error Handling**: Consistent error response format
-- **Multi-Database Support**: Works with SQLite, DynamoDB, and Firebase
+- **Multi-Database Support**: Works with SQLite and DynamoDB
 
 For interactive testing and development, the API routes are also documented in the [`src/app/api/`](src/app/api/) directory.
 

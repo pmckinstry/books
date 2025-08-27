@@ -16,7 +16,7 @@ export async function GET(
     let bookId: BookId;
     const numericId = parseInt(idParam);
     
-    // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB/Firebase)
+    // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB)
     if (!isNaN(numericId) && numericId.toString() === idParam) {
       bookId = numericId;
     } else {
@@ -54,7 +54,7 @@ export async function PUT(
     let bookId: BookId;
     const numericId = parseInt(idParam);
     
-    // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB/Firebase)
+    // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB)
     if (!isNaN(numericId) && numericId.toString() === idParam) {
       bookId = numericId;
     } else {
@@ -172,7 +172,7 @@ export async function DELETE(
     let bookId: BookId;
     const numericId = parseInt(idParam);
     
-    // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB/Firebase)
+    // If it's a valid number, try numeric ID first (for SQLite), otherwise use string (for DynamoDB)
     if (!isNaN(numericId) && numericId.toString() === idParam) {
       bookId = numericId;
     } else {
