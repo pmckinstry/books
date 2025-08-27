@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { readingListOperations } from '@/lib/database-factory';
 import AuthGuard from '@/components/AuthGuard';
-import ReadingListBookItem from '@/components/ReadingListBookItem';
 import CombinedRecommendations from '@/components/CombinedRecommendations';
+import ReadingListBooks from '@/components/ReadingListBooks';
 
 interface ReadingListDetailPageProps {
   params: Promise<{ id: string }>;
@@ -117,15 +117,7 @@ export default async function ReadingListDetailPage({ params }: ReadingListDetai
               </Link>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200">
-              {readingList.books.map((book) => (
-                <ReadingListBookItem 
-                  key={book.reading_list_book.id} 
-                  book={book} 
-                  readingListId={readingList.id}
-                />
-              ))}
-            </div>
+            <ReadingListBooks readingListId={readingList.id} initialBooks={readingList.books} />
           )}
         </div>
 

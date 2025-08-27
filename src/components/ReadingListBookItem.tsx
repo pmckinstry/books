@@ -9,9 +9,13 @@ import { BookWithGenres, ReadingListBook } from '@/lib/database-factory';
 interface ReadingListBookItemProps {
   book: BookWithGenres & { reading_list_book: ReadingListBook };
   readingListId: string;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  disableUp?: boolean;
+  disableDown?: boolean;
 }
 
-export default function ReadingListBookItem({ book, readingListId }: ReadingListBookItemProps) {
+export default function ReadingListBookItem({ book, readingListId, onMoveUp, onMoveDown, disableUp, disableDown }: ReadingListBookItemProps) {
   const [isRemoving, setIsRemoving] = useState(false);
   const router = useRouter();
 
@@ -119,6 +123,26 @@ export default function ReadingListBookItem({ book, readingListId }: ReadingList
             </div>
             
             <div className="flex items-center space-x-2">
+              <button
+                onClick={onMoveUp}
+                disabled={disableUp}
+                className="text-gray-600 hover:text-gray-800 transition-colors p-1 rounded hover:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                title="Move up"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              </button>
+              <button
+                onClick={onMoveDown}
+                disabled={disableDown}
+                className="text-gray-600 hover:text-gray-800 transition-colors p-1 rounded hover:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                title="Move down"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
               <span className="text-sm text-gray-500 font-medium">
                 #{book.reading_list_book.position}
               </span>
