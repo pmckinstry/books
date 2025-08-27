@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
     // This should be replaced with proper authentication
     if (!userId) {
       // Return an error in production, but for demo purposes, use admin user ID
-      console.warn('No user ID found in request, using default user ID admin-user-id');
-      userId = 'admin-user-id';
+      console.warn('No user ID found in request, using default user ID 1cf02876-41b7-4019-adb1-7d165b6770a3');
+      userId = '1cf02876-41b7-4019-adb1-7d165b6770a3';
     } else {
       // Convert number to string for DynamoDB
       userId = userId.toString();

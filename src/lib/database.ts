@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 
 // Ensure the data directory exists
 const dataDir = path.join(process.cwd(), 'data');
@@ -16,7 +17,7 @@ const db = new Database(dbPath);
 function initializeDatabase() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id TEXT PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       nickname TEXT,
@@ -27,7 +28,7 @@ function initializeDatabase() {
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS books (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       author TEXT NOT NULL,
       description TEXT,
@@ -37,7 +38,7 @@ function initializeDatabase() {
       publisher TEXT,
       cover_image_url TEXT,
       publication_date DATE,
-      user_id INTEGER,
+      user_id TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id)
@@ -46,9 +47,9 @@ function initializeDatabase() {
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS user_book_associations (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      book_id INTEGER NOT NULL,
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      book_id TEXT NOT NULL,
       read_status TEXT DEFAULT 'unread' CHECK (read_status IN ('unread', 'reading', 'read')),
       rating INTEGER CHECK (rating >= 1 AND rating <= 5),
       comments TEXT,
@@ -62,7 +63,7 @@ function initializeDatabase() {
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS genres (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id TEXT PRIMARY KEY,
       name TEXT UNIQUE NOT NULL,
       description TEXT
     )
@@ -70,8 +71,8 @@ function initializeDatabase() {
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS book_genres (
-      book_id INTEGER NOT NULL,
-      genre_id INTEGER NOT NULL,
+      book_id TEXT NOT NULL,
+      genre_id TEXT NOT NULL,
       PRIMARY KEY (book_id, genre_id),
       FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
       FOREIGN KEY (genre_id) REFERENCES genres (id) ON DELETE CASCADE
@@ -125,16 +126,17 @@ function initializeDatabase() {
       { name: 'Fiction', description: 'Imaginative works of prose that are not based on real events or people, including novels, short stories, and novellas.' },
       { name: 'Tragedy', description: 'Dramatic works that depict the downfall of a noble character due to a tragic flaw or fate, often ending in death or destruction.' }
     ];
-    const genreMap: Record<string, number> = {};
-    const insertGenre = db.prepare('INSERT INTO genres (name, description) VALUES (?, ?)');
+    const genreMap: Record<string, string> = {};
+    const insertGenre = db.prepare('INSERT INTO genres (id, name, description) VALUES (?, ?, ?)');
     genres.forEach((genre) => {
-      const result = insertGenre.run(genre.name, genre.description);
-      genreMap[genre.name] = result.lastInsertRowid as number;
+      const genreId = uuidv4();
+      insertGenre.run(genreId, genre.name, genre.description);
+      genreMap[genre.name] = genreId;
     });
 
     const insertBook = db.prepare(`
-      INSERT INTO books (title, author, description, isbn, page_count, language, publisher, cover_image_url, publication_date) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO books (id, title, author, description, isbn, page_count, language, publisher, cover_image_url, publication_date) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const insertBookGenre = db.prepare(`
       INSERT INTO book_genres (book_id, genre_id) VALUES (?, ?)
@@ -225,8 +227,8 @@ function initializeDatabase() {
       ['East of Eden', 'John Steinbeck', 'A novel about two families in the Salinas Valley in California.', '978-0142004234', 601, 'English', 'Penguin Books', 'https://images-na.ssl-images-amazon.com/images/S/compressed.photo.goodreads.com/books/1327942880i/4406.jpg', '1952-09-19', 'Classic']
     ];
     for (const [title, author, description, isbn, page_count, language, publisher, cover_image_url, publication_date, genre] of popularBooks) {
-      const result = insertBook.run(title, author, description, isbn, page_count, language, publisher, cover_image_url, publication_date);
-      const bookId = result.lastInsertRowid as number;
+      const bookId = uuidv4();
+      insertBook.run(bookId, title, author, description, isbn, page_count, language, publisher, cover_image_url, publication_date);
       insertBookGenre.run(bookId, genreMap[genre]);
     }
   }
@@ -234,9 +236,10 @@ function initializeDatabase() {
   // Create default admin user if no users exist
   const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
   if (userCount.count === 0) {
+    const adminId = uuidv4();
     const hashedPassword = bcrypt.hashSync('admin123', 10);
-    const insertUser = db.prepare('INSERT INTO users (username, password) VALUES (?, ?)');
-    insertUser.run('admin', hashedPassword);
+    const insertUser = db.prepare('INSERT INTO users (id, username, password) VALUES (?, ?, ?)');
+    insertUser.run(adminId, 'admin', hashedPassword);
   }
 }
 
@@ -247,7 +250,7 @@ initializeDatabase();
 export const getDatabase = () => db;
 
 export interface User {
-  id: number;
+  id: string;
   username: string;
   nickname?: string;
   created_at: string;
@@ -255,7 +258,7 @@ export interface User {
 }
 
 export interface Book {
-  id: number;
+  id: string;
   title: string;
   author: string;
   description?: string;
@@ -265,15 +268,15 @@ export interface Book {
   publisher?: string;
   cover_image_url?: string;
   publication_date?: string;
-  user_id?: number;
+  user_id?: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface UserBookAssociation {
-  id: number;
-  user_id: number;
-  book_id: number;
+  id: string;
+  user_id: string;
+  book_id: string;
   read_status: 'unread' | 'reading' | 'read';
   rating?: number;
   comments?: string;
@@ -291,7 +294,7 @@ export interface CreateBookData {
   publisher?: string;
   cover_image_url?: string;
   publication_date?: string;
-  user_id?: number;
+  user_id?: string;
 }
 
 export interface UpdateBookData {
@@ -304,7 +307,7 @@ export interface UpdateBookData {
   publisher?: string;
   cover_image_url?: string;
   publication_date?: string;
-  genres?: number[];
+  genres?: string[];
 }
 
 export interface CreateUserData {
@@ -319,8 +322,8 @@ export interface LoginData {
 }
 
 export interface CreateUserBookAssociationData {
-  user_id: number;
-  book_id: number;
+  user_id: string;
+  book_id: string;
   read_status?: 'unread' | 'reading' | 'read';
   rating?: number;
   comments?: string;
@@ -333,7 +336,7 @@ export interface UpdateUserBookAssociationData {
 }
 
 export interface Genre {
-  id: number;
+  id: string;
   name: string;
   description?: string;
 }
@@ -350,7 +353,7 @@ export interface BookFilters {
   publisher?: string;
   pageCountFrom?: number;
   pageCountTo?: number;
-  genreIds?: number[];
+  genreIds?: string[];
 }
 
 function getGenresForBook(bookId: string): Genre[] {
@@ -378,12 +381,13 @@ export const userOperations = {
   // Create a new user
   create: async (data: CreateUserData): Promise<User | null> => {
     try {
+      const userId = uuidv4();
       const hashedPassword = bcrypt.hashSync(data.password, 10);
-      const stmt = db.prepare('INSERT INTO users (username, password, nickname) VALUES (?, ?, ?)');
-      const result = stmt.run(data.username, hashedPassword, data.nickname || data.username);
+      const stmt = db.prepare('INSERT INTO users (id, username, password, nickname) VALUES (?, ?, ?, ?)');
+      stmt.run(userId, data.username, hashedPassword, data.nickname || data.username);
       
       // Return the created user (without password)
-      const user = db.prepare('SELECT id, username, nickname, created_at, updated_at FROM users WHERE id = ?').get(result.lastInsertRowid as number) as User;
+      const user = db.prepare('SELECT id, username, nickname, created_at, updated_at FROM users WHERE id = ?').get(userId) as User;
       return user;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -394,22 +398,23 @@ export const userOperations = {
   // Authenticate user
   authenticate: async (data: LoginData): Promise<User | null> => {
     try {
-      const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
-      const user = stmt.get(data.username) as User | undefined;
+      // First get the user without password
+      const userStmt = db.prepare('SELECT id, username, nickname, created_at, updated_at FROM users WHERE username = ?');
+      const user = userStmt.get(data.username) as User | undefined;
       
       if (!user) return null;
       
-      const isValid = bcrypt.compareSync(data.password, user.password);
+      // Then get the password separately
+      const passwordStmt = db.prepare('SELECT password FROM users WHERE username = ?');
+      const passwordResult = passwordStmt.get(data.username) as { password: string } | undefined;
+      
+      if (!passwordResult) return null;
+      
+      const isValid = bcrypt.compareSync(data.password, passwordResult.password);
       if (!isValid) return null;
       
       // Return user without password
-      return {
-        id: user.id,
-        username: user.username,
-        nickname: user.nickname,
-        created_at: user.created_at,
-        updated_at: user.updated_at
-      };
+      return user;
     } catch (error) {
       console.error('Error authenticating user:', error);
       return null;
@@ -417,7 +422,7 @@ export const userOperations = {
   },
 
   // Get user by ID
-  getById: (id: number): User | null => {
+  getById: (id: string): User | null => {
     try {
       const stmt = db.prepare('SELECT id, username, nickname, created_at, updated_at FROM users WHERE id = ?');
       const user = stmt.get(id) as User | undefined;
@@ -441,7 +446,7 @@ export const userOperations = {
   },
 
   // Update user profile
-  updateProfile: async (userId: number, data: { nickname?: string }): Promise<User | null> => {
+  updateProfile: async (userId: string, data: { nickname?: string }): Promise<User | null> => {
     try {
       const updates: string[] = [];
       const values: (string | number | null)[] = [];
@@ -477,33 +482,41 @@ export const userOperations = {
 export const userBookAssociationOperations = {
   // Create or update a user-book association
   upsert: (data: CreateUserBookAssociationData): UserBookAssociation => {
-    const stmt = db.prepare(`
-      INSERT INTO user_book_associations (user_id, book_id, read_status, rating, comments)
-      VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT(user_id, book_id) DO UPDATE SET
-        read_status = COALESCE(?, read_status),
-        rating = COALESCE(?, rating),
-        comments = COALESCE(?, comments),
-        updated_at = CURRENT_TIMESTAMP
-    `);
+    const id = `${data.user_id}_${data.book_id}`;
     
-    stmt.run(
-      data.user_id, 
-      data.book_id, 
-      data.read_status || 'unread',
-      data.rating || null,
-      data.comments || null,
-      data.read_status || null,
-      data.rating || null,
-      data.comments || null
-    );
+    // Check if association already exists
+    const existing = userBookAssociationOperations.getByUserAndBook(data.user_id, data.book_id);
     
-    // Return the created/updated association
-    return userBookAssociationOperations.getByUserAndBook(data.user_id, data.book_id)!;
+    if (existing) {
+      // Update existing association
+      return userBookAssociationOperations.update(data.user_id, data.book_id, {
+        read_status: data.read_status,
+        rating: data.rating,
+        comments: data.comments
+      })!;
+    } else {
+      // Insert new association
+      const stmt = db.prepare(`
+        INSERT INTO user_book_associations (id, user_id, book_id, read_status, rating, comments)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      
+      stmt.run(
+        id,
+        data.user_id, 
+        data.book_id, 
+        data.read_status || 'unread',
+        data.rating || null,
+        data.comments || null
+      );
+      
+      // Return the created association
+      return userBookAssociationOperations.getByUserAndBook(data.user_id, data.book_id)!;
+    }
   },
 
   // Get association by user and book
-  getByUserAndBook: (userId: number, bookId: number): UserBookAssociation | null => {
+  getByUserAndBook: (userId: string, bookId: string): UserBookAssociation | null => {
     try {
       const stmt = db.prepare('SELECT * FROM user_book_associations WHERE user_id = ? AND book_id = ?');
       const association = stmt.get(userId, bookId) as UserBookAssociation | undefined;
@@ -515,7 +528,7 @@ export const userBookAssociationOperations = {
   },
 
   // Get all associations for a user
-  getByUser: (userId: number): UserBookAssociation[] => {
+  getByUser: (userId: string): UserBookAssociation[] => {
     try {
       const stmt = db.prepare('SELECT * FROM user_book_associations WHERE user_id = ? ORDER BY updated_at DESC');
       return stmt.all(userId) as UserBookAssociation[];
@@ -526,7 +539,7 @@ export const userBookAssociationOperations = {
   },
 
   // Update an existing association
-  update: (userId: number, bookId: number, data: UpdateUserBookAssociationData): UserBookAssociation | null => {
+  update: (userId: string, bookId: string, data: UpdateUserBookAssociationData): UserBookAssociation | null => {
     try {
       const updates: string[] = [];
       const values: (string | number | null)[] = [];
@@ -566,7 +579,7 @@ export const userBookAssociationOperations = {
   },
 
   // Delete an association
-  delete: (userId: number, bookId: number): boolean => {
+  delete: (userId: string, bookId: string): boolean => {
     try {
       const stmt = db.prepare('DELETE FROM user_book_associations WHERE user_id = ? AND book_id = ?');
       const result = stmt.run(userId, bookId);
@@ -577,8 +590,8 @@ export const userBookAssociationOperations = {
     }
   },
 
-  // Get books with user associations (for display)
-  getBooksWithUserAssociations: (userId: number, page: number = 1, limit: number = 10): { books: (Book & { user_association?: UserBookAssociation })[], total: number, totalPages: number } => {
+  // Get books with user associations (for display) - matching DynamoDB signature
+  getBooksWithUserAssociations: (userId: string, page: number = 1, limit: number = 10): { books: (Book & { user_association?: UserBookAssociation })[], total: number, totalPages: number, hasMore: boolean } => {
     try {
       const offset = (page - 1) * limit;
       
@@ -595,9 +608,9 @@ export const userBookAssociationOperations = {
         LIMIT ? OFFSET ?
       `);
       
-      const results = stmt.all(userId, limit, offset) as unknown[];
+      const results = stmt.all(userId, limit, offset) as any[];
       
-      const books = results.map(row => ({
+      const books = results.map((row: any) => ({
         id: row.id,
         title: row.title,
         author: row.author,
@@ -619,16 +632,17 @@ export const userBookAssociationOperations = {
       }));
       
       const totalPages = Math.ceil(total / limit);
+      const hasMore = page < totalPages;
       
-      return { books, total, totalPages };
+      return { books, total, totalPages, hasMore };
     } catch (error) {
       console.error('Error getting books with user associations:', error);
-      return { books: [], total: 0, totalPages: 0 };
+      return { books: [], total: 0, totalPages: 0, hasMore: false };
     }
   },
 
-  // Get read books with pagination, search, and sorting
-  getReadBooksWithPagination: (userId: number, page: number = 1, limit: number = 10, sortBy: string = 'title', sortOrder: 'asc' | 'desc' = 'asc', search?: string): { books: (BookWithGenres & { user_association?: UserBookAssociation })[], total: number, totalPages: number } => {
+  // Get read books with pagination, search, and sorting (matching DynamoDB signature)
+  getReadBooksWithPagination: async (userId: string, page: number = 1, limit: number = 10, sortBy: string = 'title', sortOrder: 'asc' | 'desc' = 'asc', search?: string): Promise<{ books: (BookWithGenres & { user_association: UserBookAssociation })[], total: number, totalPages: number, hasMore: boolean }> => {
     try {
       const offset = (page - 1) * limit;
       
@@ -644,7 +658,7 @@ export const userBookAssociationOperations = {
       }
       
       let whereClause = 'WHERE uba.user_id = ? AND uba.read_status = \'read\'';
-      const searchParams: unknown[] = [userId];
+      const searchParams: (string | number | null)[] = [userId];
       
       if (search && search.trim()) {
         const searchTerm = `%${search.trim()}%`;
@@ -676,7 +690,7 @@ export const userBookAssociationOperations = {
       // Get paginated read books with search and sorting
       const stmt = db.prepare(`
         SELECT DISTINCT 
-          b.id, b.title, b.author, b.description, b.user_id, b.created_at, b.updated_at,
+          b.*,
           uba.id as uba_id, uba.user_id as uba_user_id, uba.book_id as uba_book_id, 
           uba.read_status as uba_read_status, uba.rating as uba_rating, 
           uba.comments as uba_comments, uba.created_at as uba_created_at, uba.updated_at as uba_updated_at
@@ -687,9 +701,9 @@ export const userBookAssociationOperations = {
         LIMIT ? OFFSET ?
       `);
       
-      const results = stmt.all(...searchParams, limit, offset) as unknown[];
+      const results = stmt.all(...searchParams, limit, offset) as any[];
       
-      const books = results.map(row => ({
+      const books = results.map((row: any) => ({
         id: row.id,
         title: row.title,
         author: row.author,
@@ -711,11 +725,12 @@ export const userBookAssociationOperations = {
       }));
       
       const totalPages = Math.ceil(total / limit);
+      const hasMore = page < totalPages;
       
-      return { books, total, totalPages };
+      return { books, total, totalPages, hasMore };
     } catch (error) {
       console.error('Error getting read books with pagination:', error);
-      return { books: [], total: 0, totalPages: 0 };
+      return { books: [], total: 0, totalPages: 0, hasMore: false };
     }
   }
 };
@@ -729,8 +744,8 @@ export const bookOperations = {
     return books.map(book => ({ ...book, genres: getGenresForBook(book.id) }));
   },
 
-  // Get paginated books
-  getPaginated: (page: number = 1, limit: number = 10, sortBy: string = 'created_at', sortOrder: 'asc' | 'desc' = 'desc', filters?: BookFilters): { books: BookWithGenres[], total: number, totalPages: number } => {
+  // Get books with pagination and caching (matching DynamoDB signature)
+  getBooksWithPagination: async (page: number = 1, limit: number = 20, filters?: BookFilters, sortBy: string = 'created_at', sortOrder: 'asc' | 'desc' = 'desc'): Promise<{ books: BookWithGenres[], total: number, totalPages: number, hasMore: boolean }> => {
     const offset = (page - 1) * limit;
     
     // Validate sortBy parameter
@@ -818,7 +833,7 @@ export const bookOperations = {
     const countStmt = db.prepare(`SELECT COUNT(*) as count FROM books b ${whereClause}`);
     const total = (countStmt.get(...searchParams) as { count: number }).count;
     
-    // Get paginated books with search and sorting
+    // Get paginated books with search and dynamic sorting
     const stmt = db.prepare(`
       SELECT DISTINCT b.* FROM books b 
       ${whereClause}
@@ -828,12 +843,13 @@ export const bookOperations = {
     const books = stmt.all(...searchParams, limit, offset) as Book[];
     
     const totalPages = Math.ceil(total / limit);
+    const hasMore = page < totalPages;
     
-    return { books: books.map(book => ({ ...book, genres: getGenresForBook(book.id) })), total, totalPages };
+    return { books: books.map(book => ({ ...book, genres: getGenresForBook(book.id) })), total, totalPages, hasMore };
   },
 
   // Get a single book by ID
-  getById: (id: number): BookWithGenres | null => {
+  getById: (id: string): BookWithGenres | null => {
     const stmt = db.prepare('SELECT * FROM books WHERE id = ?');
     const book = stmt.get(id) as Book | undefined;
     if (!book) return null;
@@ -841,12 +857,14 @@ export const bookOperations = {
   },
 
   // Create a new book
-  create: (data: CreateBookData, genres?: number[]): BookWithGenres => {
+  create: (data: CreateBookData, genres?: string[]): BookWithGenres => {
+    const bookId = uuidv4();
     const stmt = db.prepare(`
-      INSERT INTO books (title, author, description, isbn, page_count, language, publisher, cover_image_url, publication_date, user_id) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO books (id, title, author, description, isbn, page_count, language, publisher, cover_image_url, publication_date, user_id) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    const result = stmt.run(
+    stmt.run(
+      bookId,
       data.title, 
       data.author, 
       data.description, 
@@ -859,8 +877,6 @@ export const bookOperations = {
       data.user_id
     );
     
-    const bookId = result.lastInsertRowid as number;
-    
     // Add genres if provided
     if (genres && genres.length > 0) {
       bookOperations.setGenres(bookId, genres);
@@ -871,7 +887,7 @@ export const bookOperations = {
   },
 
   // Update a book
-  update: (id: number, data: UpdateBookData): Book | null => {
+  update: (id: string, data: UpdateBookData): Book | null => {
     const book = bookOperations.getById(id);
     if (!book) return null;
 
@@ -935,14 +951,14 @@ export const bookOperations = {
   },
 
   // Delete a book
-  delete: (id: number): boolean => {
+  delete: (id: string): boolean => {
     const stmt = db.prepare('DELETE FROM books WHERE id = ?');
     const result = stmt.run(id);
     return result.changes > 0;
   },
 
   // Check if a book with the same title and author already exists
-  checkDuplicate: (title: string, author: string, excludeId?: number): Book | null => {
+  checkDuplicate: (title: string, author: string, excludeId?: string): Book | null => {
     let stmt;
     let params;
     
@@ -959,7 +975,7 @@ export const bookOperations = {
   },
 
   // Set genres for a book (replaces existing genres)
-  setGenres: (bookId: number, genreIds: number[]): void => {
+  setGenres: (bookId: string, genreIds: string[]): void => {
     // Remove existing genres
     const deleteStmt = db.prepare('DELETE FROM book_genres WHERE book_id = ?');
     deleteStmt.run(bookId);
@@ -972,7 +988,7 @@ export const bookOperations = {
   },
 
   // Add genres to a book (keeps existing genres)
-  addGenres: (bookId: number, genreIds: number[]): void => {
+  addGenres: (bookId: string, genreIds: string[]): void => {
     const insertStmt = db.prepare('INSERT OR IGNORE INTO book_genres (book_id, genre_id) VALUES (?, ?)');
     for (const genreId of genreIds) {
       insertStmt.run(bookId, genreId);
@@ -980,7 +996,7 @@ export const bookOperations = {
   },
 
   // Remove genres from a book
-  removeGenres: (bookId: number, genreIds: number[]): void => {
+  removeGenres: (bookId: string, genreIds: string[]): void => {
     const deleteStmt = db.prepare('DELETE FROM book_genres WHERE book_id = ? AND genre_id = ?');
     for (const genreId of genreIds) {
       deleteStmt.run(bookId, genreId);
@@ -1012,7 +1028,7 @@ export const genreOperations = {
   },
 
   // Get a single genre by ID
-  getById: (id: number): Genre | null => {
+  getById: (id: string): Genre | null => {
     const stmt = db.prepare('SELECT id, name, description FROM genres WHERE id = ?');
     const genre = stmt.get(id) as Genre | undefined;
     return genre || null;
@@ -1020,15 +1036,16 @@ export const genreOperations = {
 
   // Create a new genre
   create: (data: { name: string; description?: string }): Genre => {
-    const stmt = db.prepare('INSERT INTO genres (name, description) VALUES (?, ?)');
-    const result = stmt.run(data.name.trim(), data.description?.trim() || null);
+    const genreId = uuidv4();
+    const stmt = db.prepare('INSERT INTO genres (id, name, description) VALUES (?, ?, ?)');
+    stmt.run(genreId, data.name.trim(), data.description?.trim() || null);
     
     // Return the created genre
-    return genreOperations.getById(result.lastInsertRowid as number)!;
+    return genreOperations.getById(genreId)!;
   },
 
   // Update a genre
-  update: (id: number, data: { name?: string; description?: string }): Genre | null => {
+  update: (id: string, data: { name?: string; description?: string }): Genre | null => {
     const genre = genreOperations.getById(id);
     if (!genre) return null;
 
@@ -1058,14 +1075,14 @@ export const genreOperations = {
   },
 
   // Delete a genre
-  delete: (id: number): boolean => {
+  delete: (id: string): boolean => {
     const stmt = db.prepare('DELETE FROM genres WHERE id = ?');
     const result = stmt.run(id);
     return result.changes > 0;
   },
 
   // Check if a genre with the same name already exists
-  checkDuplicate: (name: string, excludeId?: number): Genre | null => {
+  checkDuplicate: (name: string, excludeId?: string): Genre | null => {
     let stmt;
     let params;
     
@@ -1082,7 +1099,7 @@ export const genreOperations = {
   },
 
   // Get books for a specific genre
-  getBooks: (genreId: number): Book[] => {
+  getBooks: (genreId: string): Book[] => {
     return getBooksForGenre(genreId);
   }
 };
@@ -1170,9 +1187,9 @@ export const readingListOperations = {
       ORDER BY rlb.position ASC, rlb.added_at ASC
     `);
     
-    const results = stmt.all(id) as unknown[];
+    const results = stmt.all(id) as any[];
     
-    const books = results.map(row => ({
+    const books = results.map((row: any) => ({
       id: row.book_id,
       title: row.title,
       author: row.author,

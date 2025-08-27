@@ -6,7 +6,7 @@ async function getCurrentUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    return { id: 'admin-user-id' }; // Assuming admin user has UUID
+    return { id: '1cf02876-41b7-4019-adb1-7d165b6770a3' }; // Actual admin user UUID
   }
   
   return null;

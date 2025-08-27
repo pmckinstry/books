@@ -695,7 +695,9 @@ export const bookOperations = {
   getBooksWithPagination: async (
     page: number = 1,
     limit: number = 20,
-    filters?: BookFilters
+    filters?: BookFilters,
+    sortBy: string = 'created_at',
+    sortOrder: 'asc' | 'desc' = 'desc'
   ): Promise<{ books: BookWithGenres[], total: number, totalPages: number, hasMore: boolean }> => {
     try {
       // Create cache key based on parameters
@@ -777,10 +779,50 @@ export const bookOperations = {
         }
       }
       
-      // Sort books by created_at (newest first)
-      filteredBooks.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      // Apply dynamic sorting based on parameters
+      filteredBooks.sort((a, b) => {
+        let aValue: any, bValue: any;
+        
+        switch (sortBy) {
+          case 'title':
+            aValue = a.title.toLowerCase();
+            bValue = b.title.toLowerCase();
+            break;
+          case 'author':
+            aValue = a.author.toLowerCase();
+            bValue = b.author.toLowerCase();
+            break;
+          case 'page_count':
+            aValue = a.page_count || 0;
+            bValue = b.page_count || 0;
+            break;
+          case 'language':
+            aValue = a.language || '';
+            bValue = b.language || '';
+            break;
+          case 'isbn':
+            aValue = a.isbn || '';
+            bValue = b.isbn || '';
+            break;
+          case 'created_at':
+          default:
+            aValue = new Date(a.created_at).getTime();
+            bValue = new Date(b.created_at).getTime();
+            break;
+        }
+
+        if (sortOrder === 'asc') {
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return aValue.localeCompare(bValue);
+          }
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return bValue.localeCompare(aValue);
+          }
+          return bValue < aValue ? -1 : bValue > aValue ? 1 : 0;
+        }
+      });
       
       // Apply pagination
       const total = filteredBooks.length;

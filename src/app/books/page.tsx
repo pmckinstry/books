@@ -9,7 +9,7 @@ import { bookOperations, BookFilters, genreOperations } from '@/lib/database-fac
 async function getBooks(page: number, sortBy: string, sortOrder: 'asc' | 'desc', filters: BookFilters) {
   try {
     const limit = 10; // Books per page
-    return bookOperations.getPaginated(page, limit, sortBy, sortOrder, filters);
+    return bookOperations.getBooksWithPagination(page, limit, filters, sortBy, sortOrder);
   } catch (error) {
     console.error('Error fetching books:', error);
     return { books: [], total: 0, totalPages: 0 };
@@ -65,7 +65,7 @@ export default async function BooksListPage({
     if (genreIds.length > 0) filters.genreIds = genreIds;
   }
   
-  const { books, total, totalPages } = await getBooks(currentPage, currentSortBy, currentSortOrder, filters);
+  const { books, total, totalPages, hasMore } = await getBooks(currentPage, currentSortBy, currentSortOrder, filters);
   
   // Get all genres for the advanced filters
   const genres = await genreOperations.getAll();

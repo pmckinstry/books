@@ -9,8 +9,8 @@ async function getCurrentUser(request: NextRequest) {
   
   if (authHeader && authHeader.startsWith('Bearer ')) {
     // This is a placeholder - in a real app you'd decode a JWT token
-    // For now, we'll return a default user ID (admin user)
-    return { id: 'admin-user-id' }; // Assuming admin user has UUID
+    // For now, we'll return the actual admin user UUID
+    return { id: '1cf02876-41b7-4019-adb1-7d165b6770a3' }; // Actual admin user UUID
   }
   
   return null;
