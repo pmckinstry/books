@@ -6,9 +6,10 @@ import { BookWithGenres } from "@/lib/database-factory";
 
 interface BookTableProps {
   books: BookWithGenres[];
+  baseUrl?: string;
 }
 
-export default function BookTable({ books }: BookTableProps) {
+export default function BookTable({ books, baseUrl = '/books' }: BookTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -32,7 +33,7 @@ export default function BookTable({ books }: BookTableProps) {
     params.set('sortOrder', newSortOrder);
     params.set('page', '1'); // Reset to first page when sorting changes
     
-    router.push(`/books?${params.toString()}`);
+    router.push(`${baseUrl}?${params.toString()}`);
   };
 
   const getSortIcon = (field: string) => {
