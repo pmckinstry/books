@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import BookCoverImage from '@/components/BookCoverImage';
+import BookSearch from '@/components/BookSearch';
 import { getCurrentUser } from '@/lib/auth';
 import CombinedRecommendations from './CombinedRecommendations';
 
@@ -34,10 +35,6 @@ export default function ReadBooksList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalBooks, setTotalBooks] = useState(0);
-  // Unsubmitted text in the input
-  const [searchTerm, setSearchTerm] = useState('');
-  // Applied search taken from URL (controls fetching)
-  const [appliedSearch, setAppliedSearch] = useState('');
   const [sortBy, setSortBy] = useState('title');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -48,13 +45,7 @@ export default function ReadBooksList() {
     setCurrentPage(page);
   }, [page]);
 
-  // Keep appliedSearch in sync with URL; also mirror input to reflect current query
-  useEffect(() => {
-    const q = searchParams.get('search') || '';
-    setAppliedSearch(q);
-    setSearchTerm(q);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  const search = searchParams.get('search') || '';
 
   const fetchReadBooks = useCallback(async () => {
     setLoading(true);
@@ -64,7 +55,7 @@ export default function ReadBooksList() {
         limit: limit.toString(),
         sortBy,
         sortOrder,
-        ...(appliedSearch && { search: appliedSearch })
+        ...(search && { search })
       });
 
       // Get current user to include user ID in request
@@ -96,32 +87,16 @@ export default function ReadBooksList() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, appliedSearch, sortBy, sortOrder, limit]);
+  }, [currentPage, search, sortBy, sortOrder, limit]);
 
   useEffect(() => {
     fetchReadBooks();
   }, [fetchReadBooks]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentPage(1);
-    const params = new URLSearchParams();
-    if (searchTerm) params.set('search', searchTerm);
-    if (currentPage > 1) params.set('page', '1');
-    router.push(`/read?${params.toString()}`);
-  };
-
-  const handleSort = (field: string) => {
-    const newOrder = sortBy === field && sortOrder === 'asc' ? 'desc' : 'asc';
-    setSortBy(field);
-    setSortOrder(newOrder);
-    setCurrentPage(1);
-  };
-
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     const params = new URLSearchParams();
-    if (appliedSearch) params.set('search', appliedSearch);
+    if (search) params.set('search', search);
     if (newPage > 1) params.set('page', newPage.toString());
     router.push(`/read?${params.toString()}`);
   };
@@ -178,34 +153,16 @@ export default function ReadBooksList() {
           </p>
         </div>
 
-        {/* Search and Sort Controls */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4">
-          <form onSubmit={handleSearch} className="flex-1">
-            <div className="flex">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by title or author..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-r-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 shadow-sm hover:shadow-md font-medium"
-              >
-                Search
-              </button>
-            </div>
-          </form>
-        </div>
+        {/* Search */}
+        <BookSearch baseUrl="/read" includeAdvancedFilters={false} />
 
         {/* Books Table */}
         {books.length === 0 ? (
           <div className="bg-white shadow rounded-lg p-8 text-center">
             <p className="text-gray-500 text-lg">
-              {searchTerm ? 'No read books found matching your search.' : "You haven't marked any books as read yet."}
+              {search ? 'No read books found matching your search.' : "You haven't marked any books as read yet."}
             </p>
-            {!searchTerm && (
+            {!search && (
               <Link
                 href="/books"
                 className="mt-4 inline-block px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md font-medium"
