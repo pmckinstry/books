@@ -140,67 +140,56 @@ export default function Navigation() {
 
   return (
     <nav className="bg-gray-800 text-white p-4">
-      <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Row 1: Brand + primary links left; welcome + auth actions right */}
+        <div className="flex items-center">
           <Link 
             href="/" 
-            className="text-xl font-bold hover:text-gray-300 transition-colors"
+            className="hover:text-gray-300 transition-colors"
+            aria-label="Book Manager"
+            title="Book Manager"
           >
-            Book Manager
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19.5A2.5 2.5 0 016.5 17H20M4 15.5A2.5 2.5 0 016.5 13H20M4 11.5A2.5 2.5 0 016.5 9H20M6 5h14a2 2 0 012 2v12M6 5a2 2 0 00-2 2v12a2 2 0 002 2h14" />
+            </svg>
           </Link>
+          <div className="ml-6 flex items-center gap-6">
+            <Link href="/books" className="hover:text-gray-300 transition-colors">Books</Link>
+            <Link href="/genres" className="hover:text-gray-300 transition-colors">Genres</Link>
+            {user && (
+              <>
+                <Link href="/reading-lists" className="hover:text-gray-300 transition-colors">Reading Lists</Link>
+                <Link href="/read" className="hover:text-gray-300 transition-colors">Read</Link>
+              </>
+            )}
+          </div>
+          <div className="ml-auto flex items-center gap-4">
+            {user ? (
+              <>
+                <Link 
+                  href="/profile" 
+                  className="text-gray-300 hover:text-white transition-colors"
+                  title="Profile"
+                >
+                  Welcome, {user.nickname || user.username}!
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="hover:text-gray-300 transition-colors">Login</Link>
+                <Link href="/register" className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium">Register</Link>
+              </>
+            )}
+          </div>
         </div>
-        
-        <div className="flex items-center space-x-4">
-          {user ? (
-            <>
-              <Link 
-                href="/books" 
-                className="hover:text-gray-300 transition-colors"
-              >
-                All Books
-              </Link>
-              <Link 
-                href="/reading-lists" 
-                className="hover:text-gray-300 transition-colors"
-              >
-                Reading Lists
-              </Link>
-              <Link 
-                href="/genres" 
-                className="hover:text-gray-300 transition-colors"
-              >
-                Genres
-              </Link>
-              <Link 
-                href="/profile" 
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Welcome, {user.nickname || user.username}!
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-3 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link 
-                href="/login" 
-                className="hover:text-gray-300 transition-colors"
-              >
-                Login
-              </Link>
-              <Link 
-                href="/register" 
-                className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-3 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium"
-              >
-                Register
-              </Link>
-            </>
-          )}
-        </div>
+
+        {/* Single row layout; user-specific links included above */}
       </div>
     </nav>
   );
