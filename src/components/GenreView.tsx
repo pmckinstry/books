@@ -143,7 +143,12 @@ export default function GenreView({ genreId }: GenreViewProps) {
             {books.length === 0 ? (
               <p className="text-gray-400 italic">No books found for this genre.</p>
             ) : (
-              <BookTable books={books} baseUrl={`/genres/${genreId}`} />
+              <BookTable 
+                books={books} 
+                baseUrl={`/genres/${genreId}`} 
+                showGenres={false}
+                showActions={false}
+              />
             )}
           </div>
 
