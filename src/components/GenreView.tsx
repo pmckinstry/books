@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Genre, BookWithGenres } from '@/lib/database-factory';
 import BookTable from '@/components/BookTable';
@@ -14,9 +13,7 @@ export default function GenreView({ genreId }: GenreViewProps) {
   const [genre, setGenre] = useState<Genre | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
   const [books, setBooks] = useState<BookWithGenres[]>([]);
-  const router = useRouter();
 
   const fetchGenre = useCallback(async () => {
     try {
@@ -38,29 +35,6 @@ export default function GenreView({ genreId }: GenreViewProps) {
     fetchGenre();
   }, [fetchGenre]);
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this genre? This action cannot be undone.')) {
-      return;
-    }
-
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/genres/${genreId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete genre');
-      }
-
-      // Redirect to genres page after successful deletion
-      router.push('/genres');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      setIsDeleting(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -135,7 +109,7 @@ export default function GenreView({ genreId }: GenreViewProps) {
       <div className="bg-white shadow rounded-lg p-6">
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2 break-words">
               {genre.name}
             </h2>
 
@@ -146,7 +120,7 @@ export default function GenreView({ genreId }: GenreViewProps) {
               Description
             </h3>
             {genre.description ? (
-              <p className="text-gray-700 leading-relaxed">
+              <p className="text-gray-700 leading-relaxed break-words">
                 {genre.description}
               </p>
             ) : (
@@ -173,22 +147,7 @@ export default function GenreView({ genreId }: GenreViewProps) {
             )}
           </div>
 
-          <div className="flex gap-4 pt-6 border-t border-gray-200">
-            <Link
-              href={`/genres/${genreId}/edit`}
-              className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm hover:shadow-md font-medium"
-            >
-              Edit Genre
-            </Link>
-            
-            <button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isDeleting ? 'Deleting...' : 'Delete Genre'}
-            </button>
-          </div>
+          {/* Controls removed for a cleaner detail view */}
         </div>
       </div>
     </div>

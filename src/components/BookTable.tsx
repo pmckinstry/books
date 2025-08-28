@@ -64,8 +64,8 @@ export default function BookTable({ books, baseUrl = '/books' }: BookTableProps)
   };
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="overflow-x-auto">
+    <div className="bg-white shadow rounded-lg overflow-x-auto">
+      <div>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -126,13 +126,13 @@ export default function BookTable({ books, baseUrl = '/books' }: BookTableProps)
             {books.map((book) => (
               <tr key={book.id} className="hover:bg-gray-50 group">
                 <td 
-                  className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 cursor-pointer" 
+                  className="px-6 py-4 text-sm font-medium text-gray-900 cursor-pointer whitespace-normal break-words max-w-[40ch]" 
                   onClick={() => handleRowClick(book.id)}
                 >
                   {book.title}
                 </td>
                 <td 
-                  className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer"
+                  className="px-6 py-4 text-sm text-gray-500 cursor-pointer whitespace-normal break-words max-w-[28ch]"
                   onClick={() => {
                     const params = new URLSearchParams();
                     params.set('search', book.author);
@@ -150,7 +150,7 @@ export default function BookTable({ books, baseUrl = '/books' }: BookTableProps)
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {book.language}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 text-sm text-gray-500 whitespace-normal">
                   <div className="flex flex-wrap gap-1">
                     {Array.isArray(book.genres) && book.genres
                       .sort((a, b) => a.name.localeCompare(b.name))
