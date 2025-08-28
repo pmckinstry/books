@@ -154,7 +154,7 @@ export default function ReadBooksList() {
         </div>
 
         {/* Search */}
-        <BookSearch baseUrl="/read" includeAdvancedFilters={false} />
+        <BookSearch baseUrl="/read" includeAdvancedFilters={false} debounceMs={500} />
 
         {/* Books Table */}
         {books.length === 0 ? (

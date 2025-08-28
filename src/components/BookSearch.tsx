@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import BookAdvancedFilters from './BookAdvancedFilters';
 import { Genre } from '@/lib/database-factory';
@@ -9,38 +9,61 @@ interface BookSearchProps {
   genres?: Genre[];
   baseUrl?: string;
   includeAdvancedFilters?: boolean;
+  debounceMs?: number; // delay before pushing URL updates
+  submitOnEnter?: boolean; // allow immediate search on Enter
 }
 
 export default function BookSearch({
   genres = [],
   baseUrl = '/books',
   includeAdvancedFilters = true,
+  debounceMs = 500,
+  submitOnEnter = true,
 }: BookSearchProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear any pending debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   // Update search term when URL params change
   useEffect(() => {
     setSearchTerm(searchParams.get('search') || '');
   }, [searchParams]);
 
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    
+  const pushSearch = (value: string) => {
     const params = new URLSearchParams(searchParams);
-    
     if (value.trim()) {
       params.set('search', value.trim());
     } else {
       params.delete('search');
     }
-    
     // Reset to first page when searching
     params.set('page', '1');
-
     router.push(`${baseUrl}?${params.toString()}`);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    // Debounce URL updates to avoid pushing on every keystroke
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      pushSearch(value);
+    }, Math.max(0, debounceMs));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (submitOnEnter && e.key === 'Enter') {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      pushSearch(searchTerm);
+    }
   };
 
   const handleClear = () => {
@@ -71,7 +94,8 @@ export default function BookSearch({
           <input
             type="text"
             value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Search books by title, author, year, genre, or description..."
             className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
