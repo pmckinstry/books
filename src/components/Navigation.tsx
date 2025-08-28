@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import Image from "next/image";
 // import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getCurrentUser, removeCurrentUser, clearStaleUserData } from '@/lib/auth';
@@ -145,13 +146,11 @@ export default function Navigation() {
         <div className="flex items-center">
           <Link 
             href="/" 
-            className="hover:text-gray-300 transition-colors"
+            className="hover:opacity-90 transition-opacity"
             aria-label="Book Manager"
             title="Book Manager"
           >
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19.5A2.5 2.5 0 016.5 17H20M4 15.5A2.5 2.5 0 016.5 13H20M4 11.5A2.5 2.5 0 016.5 9H20M6 5h14a2 2 0 012 2v12M6 5a2 2 0 00-2 2v12a2 2 0 002 2h14" />
-            </svg>
+            <Image src="/bookshelf.webp" alt="Book Manager" width={32} height={32} className="w-8 h-8" />
           </Link>
           <div className="ml-6 flex items-center gap-6">
             <Link href="/books" className="hover:text-gray-300 transition-colors">Books</Link>
