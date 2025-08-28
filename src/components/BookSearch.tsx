@@ -7,9 +7,15 @@ import { Genre } from '@/lib/database-factory';
 
 interface BookSearchProps {
   genres?: Genre[];
+  baseUrl?: string;
+  includeAdvancedFilters?: boolean;
 }
 
-export default function BookSearch({ genres = [] }: BookSearchProps) {
+export default function BookSearch({
+  genres = [],
+  baseUrl = '/books',
+  includeAdvancedFilters = true,
+}: BookSearchProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
@@ -33,8 +39,8 @@ export default function BookSearch({ genres = [] }: BookSearchProps) {
     
     // Reset to first page when searching
     params.set('page', '1');
-    
-    router.push(`/books?${params.toString()}`);
+
+    router.push(`${baseUrl}?${params.toString()}`);
   };
 
   const handleClear = () => {
@@ -42,13 +48,15 @@ export default function BookSearch({ genres = [] }: BookSearchProps) {
     const params = new URLSearchParams(searchParams);
     params.delete('search');
     params.set('page', '1');
-    router.push(`/books?${params.toString()}`);
+    router.push(`${baseUrl}?${params.toString()}`);
   };
 
   // Check if any advanced filters are active
-  const hasAdvancedFilters = ['yearFrom', 'yearTo', 'language', 'publisher', 'pageCountFrom', 'pageCountTo', 'genreIds'].some(param => 
-    searchParams.get(param)
-  );
+  const hasAdvancedFilters =
+    includeAdvancedFilters &&
+    ['yearFrom', 'yearTo', 'language', 'publisher', 'pageCountFrom', 'pageCountTo', 'genreIds'].some(param =>
+      searchParams.get(param)
+    );
 
   return (
     <div className="mb-6 space-y-4">
@@ -80,24 +88,26 @@ export default function BookSearch({ genres = [] }: BookSearchProps) {
         </div>
         
         {/* Advanced Filters Toggle */}
-        <button
-          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-          className={`px-4 py-3 border rounded-md transition-colors flex items-center space-x-2 ${
-            hasAdvancedFilters || showAdvancedFilters
-              ? 'bg-blue-50 border-blue-300 text-blue-700'
-              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          <span>Filters</span>
-          {hasAdvancedFilters && (
-            <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5 ml-1">
-              Active
-            </span>
-          )}
-        </button>
+        {includeAdvancedFilters && (
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`px-4 py-3 border rounded-md transition-colors flex items-center space-x-2 ${
+              hasAdvancedFilters || showAdvancedFilters
+                ? 'bg-blue-50 border-blue-300 text-blue-700'
+                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            <span>Filters</span>
+            {hasAdvancedFilters && (
+              <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5 ml-1">
+                Active
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Search status */}
@@ -108,14 +118,14 @@ export default function BookSearch({ genres = [] }: BookSearchProps) {
       )}
 
       {/* Advanced Filters Panel */}
-      {showAdvancedFilters && (
+      {includeAdvancedFilters && showAdvancedFilters && (
         <div className="mt-4">
-          <BookAdvancedFilters 
-            genres={genres} 
-            onClose={() => setShowAdvancedFilters(false)} 
+          <BookAdvancedFilters
+            genres={genres}
+            onClose={() => setShowAdvancedFilters(false)}
           />
         </div>
       )}
     </div>
   );
-} 
+}
