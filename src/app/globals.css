@@ -167,3 +167,34 @@ body {
 .alert-info {
   @apply bg-blue-50 border-blue-200 text-blue-700;
 }
+
+/* Polished CTA Button */
+.btn-cta {
+  @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 font-medium shadow-sm transition-all duration-200;
+  @apply hover:bg-gray-50 hover:shadow-md hover:border-gray-400;
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+.btn-cta .icon-pill {
+  @apply inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white shadow-sm;
+}
+
+/* Square Icon Button */
+.btn-icon {
+  @apply inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 bg-white text-gray-700 shadow-sm transition-all duration-200;
+  @apply hover:bg-gray-50 hover:shadow-md hover:border-gray-400 hover:text-gray-900;
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+/* Blue variant for icon button */
+.btn-icon-blue {
+  @apply text-blue-700 border-blue-400 bg-white;
+}
+.btn-icon-blue:hover {
+  @apply text-blue-800 border-blue-500 bg-white;
+}
+
+/* Larger variant for prominence */
+.btn-icon-lg {
+  @apply w-12 h-12;
+}
