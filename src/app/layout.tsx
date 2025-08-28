@@ -16,6 +16,9 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "Book Manager",
   description: "Manage your personal book collection",
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
