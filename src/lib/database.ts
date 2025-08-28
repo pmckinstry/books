@@ -366,16 +366,6 @@ function getGenresForBook(bookId: string): Genre[] {
   return stmt.all(bookId) as Genre[];
 }
 
-function getBooksByGenre(genreId: string): Book[] {
-  const stmt = db.prepare(`
-    SELECT b.* FROM books b
-    INNER JOIN book_genres bg ON b.id = bg.book_id
-    WHERE bg.genre_id = ?
-    ORDER BY b.title
-  `);
-  return stmt.all(genreId) as Book[];
-}
-
 // User operations
 export const userOperations = {
   // Create a new user
@@ -1004,19 +994,20 @@ export const bookOperations = {
   },
 
   // Get books by genre
-  getBooksByGenre: (genreId: string): Book[] => {
+  getBooksByGenre: (genreId: string): BookWithGenres[] => {
     return getBooksForGenre(genreId);
   }
 };
 
-export function getBooksForGenre(genreId: string) {
+export function getBooksForGenre(genreId: string): BookWithGenres[] {
   const stmt = db.prepare(`
     SELECT b.* FROM books b
     INNER JOIN book_genres bg ON b.id = bg.book_id
     WHERE bg.genre_id = ?
     ORDER BY b.title
   `);
-  return stmt.all(genreId) as Book[];
+  const books = stmt.all(genreId) as Book[];
+  return books.map(book => ({ ...book, genres: getGenresForBook(book.id) }));
 }
 
 // Genre CRUD operations

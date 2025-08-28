@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Genre } from '@/lib/database-factory';
+import { Genre, BookWithGenres } from '@/lib/database-factory';
+import BookTable from '@/components/BookTable';
 
 interface GenreViewProps {
   genreId: string;
@@ -14,7 +15,7 @@ export default function GenreView({ genreId }: GenreViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
-  const [books, setBooks] = useState<Array<{id: string; title: string; author: string}>>([]);
+  const [books, setBooks] = useState<BookWithGenres[]>([]);
   const router = useRouter();
 
   const fetchGenre = useCallback(async () => {
@@ -168,27 +169,7 @@ export default function GenreView({ genreId }: GenreViewProps) {
             {books.length === 0 ? (
               <p className="text-gray-400 italic">No books found for this genre.</p>
             ) : (
-              <ul className="divide-y divide-gray-200">
-                {books.map((book) => (
-                  <li key={book.id} className="py-2">
-                    <a href={`/books/${book.id}`} className="text-blue-700 hover:underline font-medium">
-                      {book.title}
-                    </a>
-                    <span className="ml-2 text-gray-600 text-sm">
-                      by <span 
-                        className="cursor-pointer hover:text-blue-600 transition-colors"
-                        onClick={() => {
-                          const params = new URLSearchParams();
-                          params.set('search', book.author);
-                          window.location.href = `/books?${params.toString()}`;
-                        }}
-                      >
-                        {book.author}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <BookTable books={books} baseUrl={`/genres/${genreId}`} />
             )}
           </div>
 
