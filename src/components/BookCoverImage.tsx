@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 
 interface BookCoverImageProps {
-  src: string;
+  src?: string;
   alt: string;
   className?: string;
 }
@@ -12,7 +12,7 @@ interface BookCoverImageProps {
 export default function BookCoverImage({ src, alt, className = "w-32 h-48 object-cover rounded-md shadow-md" }: BookCoverImageProps) {
   const [imageError, setImageError] = useState(false);
 
-  if (imageError) {
+  if (!src || imageError) {
     return (
       <div className={className}>
         <div className="w-full aspect-[2/3] bg-gray-200 rounded-md flex items-center justify-center">
