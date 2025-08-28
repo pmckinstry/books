@@ -34,7 +34,10 @@ export default function ReadBooksList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalBooks, setTotalBooks] = useState(0);
+  // Unsubmitted text in the input
   const [searchTerm, setSearchTerm] = useState('');
+  // Applied search taken from URL (controls fetching)
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [sortBy, setSortBy] = useState('title');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -45,6 +48,14 @@ export default function ReadBooksList() {
     setCurrentPage(page);
   }, [page]);
 
+  // Keep appliedSearch in sync with URL; also mirror input to reflect current query
+  useEffect(() => {
+    const q = searchParams.get('search') || '';
+    setAppliedSearch(q);
+    setSearchTerm(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const fetchReadBooks = useCallback(async () => {
     setLoading(true);
     try {
@@ -53,7 +64,7 @@ export default function ReadBooksList() {
         limit: limit.toString(),
         sortBy,
         sortOrder,
-        ...(searchTerm && { search: searchTerm })
+        ...(appliedSearch && { search: appliedSearch })
       });
 
       // Get current user to include user ID in request
@@ -85,7 +96,7 @@ export default function ReadBooksList() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchTerm, sortBy, sortOrder, limit]);
+  }, [currentPage, appliedSearch, sortBy, sortOrder, limit]);
 
   useEffect(() => {
     fetchReadBooks();
@@ -110,7 +121,7 @@ export default function ReadBooksList() {
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     const params = new URLSearchParams();
-    if (searchTerm) params.set('search', searchTerm);
+    if (appliedSearch) params.set('search', appliedSearch);
     if (newPage > 1) params.set('page', newPage.toString());
     router.push(`/read?${params.toString()}`);
   };

@@ -5,4 +5,5 @@
 5. ✅ Add support for re-ordering the books on the reading list page.
 6. ✅ change the genre details page so that the book details in the list view match the style & format of the main book list page. Both pages should use the same html fragment to ensure they stay the same.
 7. Keep the design professional, but add in a bit more subtle color.
+8. Setup an easier way to add books you find in a genre list or in the "all books" list to a reading list or a read list. 
 
