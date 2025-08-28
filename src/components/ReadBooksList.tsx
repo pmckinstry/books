@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import BookCoverImage from '@/components/BookCoverImage';
 import { getCurrentUser } from '@/lib/auth';
 import CombinedRecommendations from './CombinedRecommendations';
 
@@ -203,99 +204,104 @@ export default function ReadBooksList() {
             )}
           </div>
         ) : (
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort('title')}
-                    >
-                      Title
-                      {sortBy === 'title' && (
-                        <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Books you’ve read</h2>
+              <div className="text-sm text-gray-500">
+                {totalBooks} total
+              </div>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {books.map((book) => (
+                <div key={book.id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      {book.cover_image_url ? (
+                        <BookCoverImage
+                          // @ts-ignore backend may send either snake or camel; keep flexible
+                          src={(book as any).cover_image_url || (book as any).coverImageUrl}
+                          alt={`Cover of ${book.title}`}
+                          className="w-16 h-24 object-cover rounded-md shadow-sm"
+                        />
+                      ) : (
+                        <div className="w-16 h-24 bg-gray-200 rounded-md flex items-center justify-center">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                        </div>
                       )}
-                    </th>
-                    <th
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={() => handleSort('author')}
-                    >
-                      Author
-                      {sortBy === 'author' && (
-                        <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                      )}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Genres
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rating
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Comments
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {books.map((book) => (
-                    <tr 
-                      key={book.id} 
-                      className="cursor-pointer hover:bg-gray-50 transition-colors duration-150"
-                      onClick={() => router.push(`/books/${book.id}`)}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {book.title}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900">
+                            <Link href={`/books/${book.id}`} className="hover:text-blue-600 transition-colors">
+                              {book.title}
+                            </Link>
+                          </h3>
+                          <p className="text-gray-600">
+                            by{' '}
+                            <span
+                              className="text-sm text-gray-600 cursor-pointer hover:text-blue-600 transition-colors"
+                              onClick={() => {
+                                const params = new URLSearchParams();
+                                params.set('search', book.author);
+                                window.location.href = `/books?${params.toString()}`;
+                              }}
+                            >
+                              {book.author}
+                            </span>
+                          </p>
+
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                            {(book as any).page_count && <span>{(book as any).page_count} pages</span>}
+                            {book.language && <span>{book.language}</span>}
+                            {book.isbn && <span>ISBN: {book.isbn}</span>}
+                          </div>
+
+                          {Array.isArray(book.genres) && book.genres.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {book.genres
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .map((genre) => (
+                                  <Link
+                                    key={genre.id}
+                                    href={`/genres/${genre.id}`}
+                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                                  >
+                                    {genre.name}
+                                  </Link>
+                                ))}
+                            </div>
+                          )}
+
+                          {book.user_association?.comments && (
+                            <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                              <p className="text-sm text-gray-700">
+                                <strong>Comments:</strong> {book.user_association.comments}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div 
-                          className="text-sm text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const params = new URLSearchParams();
-                            params.set('search', book.author);
-                            router.push(`/books?${params.toString()}`);
-                          }}
-                        >
-                          {book.author}
+                        <div className="ml-4 flex items-center space-x-3">
+                          <div>{renderStars(book.user_association?.rating)}</div>
+                          <Link 
+                            href={`/books/${book.id}`}
+                            className="text-gray-600 hover:text-gray-800 transition-colors p-1 rounded hover:bg-gray-100"
+                            title="View book details"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </Link>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-wrap gap-1">
-                          {Array.isArray(book.genres) && book.genres
-                            .sort((a, b) => a.name.localeCompare(b.name))
-                            .map((genre) => (
-                              <Link
-                                key={genre.id}
-                                href={`/genres/${genre.id}`}
-                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {genre.name}
-                              </Link>
-                            ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {renderStars(book.user_association?.rating)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-xs truncate">
-                          {book.user_association?.comments || '-'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <span className="text-blue-600">View →</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
