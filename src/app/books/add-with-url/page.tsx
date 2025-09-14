@@ -234,11 +234,17 @@ export default function AddBookWithUrlPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">
-                <BookCoverImage
-                  src={(scrapedData as any).cover_image_url || (scrapedData as any).coverImageUrl}
-                  alt={`Cover of ${scrapedData.title || 'Book cover'}`}
-                  className="w-full max-w-xs mx-auto object-cover rounded-md shadow-sm"
-                />
+                {(() => {
+                  const cover = (scrapedData as unknown as { cover_image_url?: string; coverImageUrl?: string });
+                  const src = cover.cover_image_url ?? cover.coverImageUrl;
+                  return (
+                    <BookCoverImage
+                      src={src}
+                      alt={`Cover of ${scrapedData.title || 'Book cover'}`}
+                      className="w-full max-w-xs mx-auto object-cover rounded-md shadow-sm"
+                    />
+                  );
+                })()}
               </div>
 
               <div className="lg:col-span-2 space-y-4">

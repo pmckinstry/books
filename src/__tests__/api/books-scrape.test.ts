@@ -48,7 +48,10 @@ vi.mock('next/server', async () => {
   return {
     ...actual,
     NextResponse: {
-      json: vi.fn((data, options) => ({ data, status: options?.status || 200 }))
+      json: vi.fn((data, options) => ({
+        status: options?.status || 200,
+        json: () => Promise.resolve(data)
+      }))
     }
   };
 });
@@ -109,7 +112,7 @@ describe('/api/books/scrape', () => {
     it('should return 400 if no book data extracted', async () => {
       // Override cheerio mock to return empty strings
       const cheerio = await import('cheerio');
-      (cheerio.load as jest.MockedFunction<typeof cheerio.load>).mockImplementation(() => {
+      (cheerio.load as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
         return () => ({
           text: () => '',
           attr: () => '',
@@ -139,7 +142,7 @@ describe('/api/books/scrape', () => {
     it('should return 200 with scraped book data for successful scraping', async () => {
       // Reset cheerio mock to return expected values
       const cheerio = await import('cheerio');
-      (cheerio.load as jest.MockedFunction<typeof cheerio.load>).mockImplementation(() => {
+      (cheerio.load as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
         return (selector: string) => ({
           text: () => {
             if (selector.includes('bookTitle')) return 'The Great Gatsby';

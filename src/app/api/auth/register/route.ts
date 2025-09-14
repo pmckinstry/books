@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userOperations } from '@/lib/database-factory';
+import { userOperations } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,13 +30,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if username already exists
-    // TODO: Fix this once database interface is unified
-    // if (userOperations.usernameExists && await userOperations.usernameExists(username)) {
-    //   return NextResponse.json(
-    //     { error: 'Username already exists' },
-    //     { status: 409 }
-    //   );
-    // }
+    type UsernameExists = (username: string) => Promise<boolean> | boolean;
+    const ops = userOperations as unknown as { usernameExists?: UsernameExists };
+    if (typeof ops.usernameExists === 'function') {
+      const exists = await ops.usernameExists(username);
+      if (exists) {
+        return NextResponse.json(
+          { error: 'Username already exists' },
+          { status: 409 }
+        );
+      }
+    }
 
     console.log('Creating new user...');
     const user = await userOperations.create({ username, password, nickname });

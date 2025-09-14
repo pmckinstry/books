@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bookOperations, UpdateBookData } from '@/lib/database-factory';
+import { bookOperations, UpdateBookData } from '@/lib/database';
 
 type BookId = string | number;
 

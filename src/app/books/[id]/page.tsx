@@ -49,11 +49,17 @@ export default async function BookPage({ params }: BookPageProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Cover Image */}
             <div className="md:col-span-1">
-              <BookCoverImage
-                src={(book as any).cover_image_url || (book as any).coverImageUrl}
-                alt={`Cover of ${book.title}`}
-                className="w-full max-w-xs mx-auto rounded-lg shadow-md"
-              />
+              {(() => {
+                const cover = (book as unknown as { cover_image_url?: string; coverImageUrl?: string });
+                const src = cover.cover_image_url ?? cover.coverImageUrl;
+                return (
+                  <BookCoverImage
+                    src={src}
+                    alt={`Cover of ${book.title}`}
+                    className="w-full max-w-xs mx-auto rounded-lg shadow-md"
+                  />
+                );
+              })()}
             </div>
 
             {/* Book Details */}

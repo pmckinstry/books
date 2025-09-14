@@ -35,8 +35,8 @@ export default function ReadBooksList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalBooks, setTotalBooks] = useState(0);
-  const [sortBy, setSortBy] = useState('title');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortBy] = useState('title');
+  const [sortOrder] = useState<'asc' | 'desc'>('asc');
 
   const page = parseInt(searchParams.get('page') || '1');
   const limit = 10;
@@ -184,11 +184,17 @@ export default function ReadBooksList() {
                 <div key={book.id} className="p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
-                      <BookCoverImage
-                        src={(book as any).cover_image_url || (book as any).coverImageUrl}
-                        alt={`Cover of ${book.title}`}
-                        className="w-16 h-24 object-cover rounded-md shadow-sm"
-                      />
+                      {(() => {
+                        const cover = (book as unknown as { cover_image_url?: string; coverImageUrl?: string });
+                        const src = cover.cover_image_url ?? cover.coverImageUrl;
+                        return (
+                          <BookCoverImage
+                            src={src}
+                            alt={`Cover of ${book.title}`}
+                            className="w-16 h-24 object-cover rounded-md shadow-sm"
+                          />
+                        );
+                      })()}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -214,7 +220,10 @@ export default function ReadBooksList() {
                           </p>
 
                           <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                            {(book as any).page_count && <span>{(book as any).page_count} pages</span>}
+                            {(() => {
+                              const details = (book as unknown as { page_count?: number });
+                              return details.page_count ? <span>{details.page_count} pages</span> : null;
+                            })()}
                             {book.language && <span>{book.language}</span>}
                             {book.isbn && <span>ISBN: {book.isbn}</span>}
                           </div>

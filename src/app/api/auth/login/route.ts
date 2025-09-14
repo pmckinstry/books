@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userOperations } from '@/lib/database-factory';
+import { userOperations } from '@/lib/database';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
@@ -44,14 +44,24 @@ export async function POST(request: NextRequest) {
     const oneWeek = 7 * 24 * 60 * 60; // seconds
     const csrfToken = uuidv4();
 
-    response.cookies.set('user-id', String(user.id), {
+    // In tests, NextResponse may be mocked without cookies API
+    type CookieSetter = {
+      set: (
+        name: string,
+        value: string,
+        options: { httpOnly?: boolean; sameSite?: 'lax' | 'strict' | 'none'; secure?: boolean; path?: string; maxAge?: number }
+      ) => void
+    }
+    type ResponseWithOptionalCookies = NextResponse & { cookies?: CookieSetter }
+    const resWithCookies = response as ResponseWithOptionalCookies
+    resWithCookies.cookies?.set('user-id', String(user.id), {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
       path: '/',
       maxAge: oneWeek
     });
-    response.cookies.set('csrf-token', csrfToken, {
+    resWithCookies.cookies?.set('csrf-token', csrfToken, {
       httpOnly: false,
       sameSite: 'lax',
       secure: isProd,

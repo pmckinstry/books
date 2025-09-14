@@ -52,11 +52,17 @@ export default function ReadingListBookItem({ book, readingListId, onMoveUp, onM
     <div className="p-6 hover:bg-gray-50 transition-colors">
       <div className="flex items-start space-x-4">
         <div className="flex-shrink-0">
-          <BookCoverImage
-            src={(book as any).cover_image_url || (book as any).coverImageUrl}
-            alt={`Cover of ${book.title}`}
-            className="w-16 h-24 object-cover rounded-md shadow-sm"
-          />
+          {(() => {
+            const cover = (book as unknown as { cover_image_url?: string; coverImageUrl?: string });
+            const src = cover.cover_image_url ?? cover.coverImageUrl;
+            return (
+              <BookCoverImage
+                src={src}
+                alt={`Cover of ${book.title}`}
+                className="w-16 h-24 object-cover rounded-md shadow-sm"
+              />
+            );
+          })()}
         </div>
         
         <div className="flex-1 min-w-0">

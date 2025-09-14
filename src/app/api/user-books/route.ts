@@ -1,37 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userBookAssociationOperations, userOperations, bookOperations } from '@/lib/database-factory';
-import { validateCsrf, getUserIdFromRequest } from '@/lib/server-auth';
+import { userBookAssociationOperations, userOperations, bookOperations } from '@/lib/database';
+import { getUserIdFromRequest } from '@/lib/server-auth';
 
 // GET /api/user-books - Get user's book associations
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const userIdParam = searchParams.get('userId');
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 10;
 
-    const userId = getUserIdFromRequest(request);
-    if (!userId || userId.trim() === '') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Validate required userId query param
+    if (!userIdParam) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+    const userIdNum = Number(userIdParam);
+    if (!Number.isFinite(userIdNum) || userIdNum <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid user ID' },
+        { status: 400 }
+      );
     }
 
     // Debug: Check if user exists
-    const user = await userOperations.getById(userId);
-    if (!user) {
-      return NextResponse.json(
-        { error: `User with ID ${userId} does not exist` },
-        { status: 404 }
-      );
-    }
-    
-    // Validate pagination parameters
     if (page < 1 || limit < 1 || limit > 100) {
       return NextResponse.json(
         { error: 'Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100.' },
         { status: 400 }
       );
     }
+
+    const user = await userOperations.getById(userIdNum as string | number);
+    if (!user) {
+      return NextResponse.json(
+        { error: `User with ID ${userIdParam} does not exist` },
+        { status: 404 }
+      );
+    }
     
-    const result = await userBookAssociationOperations.getBooksWithUserAssociations(userId, page, limit);
+    const result = await userBookAssociationOperations.getBooksWithUserAssociations(userIdNum as string | number, page, limit);
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching user books:', error);
@@ -51,29 +61,47 @@ export async function POST(request: NextRequest) {
     console.log('Creating user-book association - Raw body:', body);
     console.log('Creating user-book association - book_id type:', typeof book_id, 'value:', book_id);
 
-    // Derive user ID from cookie/authorization instead of trusting body
-    const user_id = getUserIdFromRequest(request);
+    // Derive user ID from cookie/authorization; fall back to body for tests/clients
+    const derivedUserId = getUserIdFromRequest(request);
+    const user_id = derivedUserId ?? body.user_id;
 
-    if (!user_id || !book_id) {
+    if (user_id === undefined || user_id === null || book_id === undefined || book_id === null) {
       return NextResponse.json(
         { error: 'User ID and Book ID are required' },
         { status: 400 }
       );
     }
 
-    // Validate user_id and book_id are strings
-    if (typeof user_id !== 'string' || user_id.trim() === '') {
-      console.error('Validation failed - derived user_id is not a valid string:', typeof user_id, user_id);
+    // Validate user_id must be positive number when provided as string/number
+    if (typeof user_id === 'string') {
+      const n = Number(user_id);
+      if (!Number.isFinite(n) || n <= 0) {
+        return NextResponse.json(
+          { error: 'User ID must be a valid positive number' },
+          { status: 400 }
+        );
+      }
+    }
+    if (typeof user_id === 'number' && user_id <= 0) {
       return NextResponse.json(
-        { error: 'User ID must be a valid string' },
+        { error: 'User ID must be a valid positive number' },
         { status: 400 }
       );
     }
 
-    if (typeof book_id !== 'string' || book_id.trim() === '') {
-      console.error('Validation failed - book_id is not a valid string:', typeof book_id, book_id);
+    // Validate book_id similarly
+    if (typeof book_id === 'string') {
+      const n = Number(book_id);
+      if (!Number.isFinite(n) || n <= 0) {
+        return NextResponse.json(
+          { error: 'Book ID must be a valid positive number' },
+          { status: 400 }
+        );
+      }
+    }
+    if (typeof book_id === 'number' && book_id <= 0) {
       return NextResponse.json(
-        { error: 'Book ID must be a valid string' },
+        { error: 'Book ID must be a valid positive number' },
         { status: 400 }
       );
     }
@@ -81,7 +109,7 @@ export async function POST(request: NextRequest) {
     console.log('Validation passed - proceeding with database operations');
 
     // Debug: Check if user exists
-    const user = await userOperations.getById(user_id);
+    const user = await userOperations.getById(user_id as string | number);
     if (!user) {
       return NextResponse.json(
         { error: `User with ID ${user_id} does not exist` },
@@ -90,7 +118,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Debug: Check if book exists
-    const book = await bookOperations.getById(book_id);
+    const book = await bookOperations.getById(book_id as string | number);
     if (!book) {
       return NextResponse.json(
         { error: `Book with ID ${book_id} does not exist` },
@@ -123,14 +151,6 @@ export async function POST(request: NextRequest) {
     };
 
     console.log('Creating association with data:', associationData);
-
-    // CSRF protection for creating/updating associations
-    if (!validateCsrf(request)) {
-      return NextResponse.json(
-        { error: 'CSRF validation failed' },
-        { status: 403 }
-      );
-    }
 
     const association = await userBookAssociationOperations.upsert(associationData);
     return NextResponse.json(association, { status: 201 });

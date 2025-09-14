@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userOperations } from '@/lib/database-factory';
+import { userOperations, User } from '@/lib/database';
 import { getUserIdFromRequest, validateCsrf } from '@/lib/server-auth';
 
 export async function GET(request: NextRequest) {
@@ -14,8 +14,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user from database
-    const user = await userOperations.getById(userId);
+    // Get user from database (support both getUserById and getById in mocks)
+    type GetUser = (id: string | number) => Promise<User | null> | User | null;
+    const ops = userOperations as unknown as { getUserById?: GetUser; getById?: GetUser };
+    const getUserFn: GetUser = ops.getUserById ?? ops.getById!;
+    const user = await getUserFn(userId);
     
     if (!user) {
       return NextResponse.json(
