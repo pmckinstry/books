@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom'
 import { vi, afterEach } from 'vitest'
 
+// Force SQLite in tests to avoid network calls
+process.env.DATABASE_TYPE = 'sqlite'
+
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
   useRouter() {

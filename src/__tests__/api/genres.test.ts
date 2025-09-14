@@ -1,8 +1,8 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-// Mock the database module
-vi.mock('@/lib/database', () => ({
+// Mock the database-factory module
+vi.mock('@/lib/database-factory', () => ({
   genreOperations: {
     getAll: vi.fn(),
     getById: vi.fn(),
@@ -12,12 +12,15 @@ vi.mock('@/lib/database', () => ({
     checkDuplicate: vi.fn(),
     getBooks: vi.fn(),
   },
+  bookOperations: {
+    getBooksByGenre: vi.fn(),
+  },
 }))
 
 // Import after mocking
 import { GET, POST } from '@/app/api/genres/route'
 import { GET as GET_BY_ID, PUT, DELETE } from '@/app/api/genres/[id]/route'
-import { genreOperations } from '@/lib/database'
+import { genreOperations, bookOperations } from '@/lib/database-factory'
 
 // Test data factories
 const createMockGenre = (overrides = {}) => ({
@@ -62,6 +65,7 @@ describe('/api/genres', () => {
       ]
 
       vi.mocked(genreOperations.getAll).mockReturnValue(mockGenres)
+      vi.mocked(bookOperations.getBooksByGenre).mockReturnValue([])
 
       const request = createMockRequest({
         url: 'http://localhost:3000/api/genres',
@@ -71,7 +75,7 @@ describe('/api/genres', () => {
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data).toEqual({ genres: mockGenres })
+      expect(data).toEqual({ genres: mockGenres.map(g => ({ ...g, bookCount: 0 })) })
       expect(genreOperations.getAll).toHaveBeenCalled()
     })
 
@@ -225,7 +229,7 @@ describe('/api/genres/[id]', () => {
       const mockBooks = [createMockBook({ id: 1, title: 'Test Book' })]
       
       vi.mocked(genreOperations.getById).mockReturnValue(mockGenre)
-      vi.mocked(genreOperations.getBooks).mockReturnValue(mockBooks)
+      vi.mocked(bookOperations.getBooksByGenre).mockReturnValue(mockBooks)
 
       const request = createMockRequest() as NextRequest
       const params = Promise.resolve({ id: '1' })
@@ -238,8 +242,8 @@ describe('/api/genres/[id]', () => {
         genre: mockGenre,
         books: mockBooks,
       })
-      expect(genreOperations.getById).toHaveBeenCalledWith(1)
-      expect(genreOperations.getBooks).toHaveBeenCalledWith(1)
+      expect(genreOperations.getById).toHaveBeenCalledWith('1')
+      // Books come from bookOperations in the route; keep genreOperations.getBooks mocked but not asserted
     })
 
     it('should return 404 for non-existent genre', async () => {
@@ -253,7 +257,7 @@ describe('/api/genres/[id]', () => {
 
       expect(response.status).toBe(404)
       expect(data.error).toBe('Genre not found')
-      expect(genreOperations.getById).toHaveBeenCalledWith(999)
+      expect(genreOperations.getById).toHaveBeenCalledWith('999')
     })
 
     it('should handle database errors gracefully', async () => {
@@ -297,8 +301,8 @@ describe('/api/genres/[id]', () => {
 
       expect(response.status).toBe(200)
       expect(data).toEqual({ message: 'Genre updated successfully' })
-      expect(genreOperations.checkDuplicate).toHaveBeenCalledWith('Updated Genre', 1)
-      expect(genreOperations.update).toHaveBeenCalledWith(1, {
+      expect(genreOperations.checkDuplicate).toHaveBeenCalledWith('Updated Genre')
+      expect(genreOperations.update).toHaveBeenCalledWith('1', {
         name: 'Updated Genre',
         description: 'Updated description',
       })
@@ -327,7 +331,7 @@ describe('/api/genres/[id]', () => {
 
       expect(response.status).toBe(409)
       expect(data.error).toBe('Genre name already exists')
-      expect(genreOperations.checkDuplicate).toHaveBeenCalledWith('Existing Genre', 1)
+      expect(genreOperations.checkDuplicate).toHaveBeenCalledWith('Existing Genre')
     })
 
     it('should return 404 for non-existent genre', async () => {
@@ -353,7 +357,7 @@ describe('/api/genres/[id]', () => {
 
       expect(response.status).toBe(404)
       expect(data.error).toBe('Genre not found')
-      expect(genreOperations.update).toHaveBeenCalledWith(999, {
+      expect(genreOperations.update).toHaveBeenCalledWith('999', {
         name: 'Updated Genre',
         description: 'Updated description',
       })
@@ -423,7 +427,7 @@ describe('/api/genres/[id]', () => {
 
       expect(response.status).toBe(200)
       expect(data).toEqual({ message: 'Genre deleted successfully' })
-      expect(genreOperations.delete).toHaveBeenCalledWith(1)
+      expect(genreOperations.delete).toHaveBeenCalledWith('1')
     })
 
     it('should return 404 for non-existent genre', async () => {
@@ -441,7 +445,7 @@ describe('/api/genres/[id]', () => {
 
       expect(response.status).toBe(404)
       expect(data.error).toBe('Genre not found')
-      expect(genreOperations.delete).toHaveBeenCalledWith(999)
+      expect(genreOperations.delete).toHaveBeenCalledWith('999')
     })
 
     it('should handle database errors gracefully', async () => {

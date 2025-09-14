@@ -1,7 +1,7 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
-// Mock the database module at the very top
-vi.mock('@/lib/database', () => ({
+// Mock the database-factory module at the very top
+vi.mock('@/lib/database-factory', () => ({
   userBookAssociationOperations: {
     getByUser: vi.fn(),
     getReadBooksWithPagination: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock('@/lib/database', () => ({
 
 import { NextRequest } from 'next/server'
 import { GET as getReadBooks } from '@/app/api/user-books/read/route'
-import { userBookAssociationOperations } from '@/lib/database'
+import { userBookAssociationOperations } from '@/lib/database-factory'
 
 // Test data factories
 const createMockBook = (overrides = {}) => ({
@@ -109,7 +109,7 @@ describe('/api/user-books', () => {
       expect(response.status).toBe(200)
       expect(data).toEqual(mockPaginatedResult)
       expect(userBookAssociationOperations.getReadBooksWithPagination).toHaveBeenCalledWith(
-        1, // userId
+        '1', // userId
         1, // page
         10, // limit
         'title', // sortBy
@@ -138,7 +138,7 @@ describe('/api/user-books', () => {
       expect(response.status).toBe(200)
       expect(data).toEqual(mockPaginatedResult)
       expect(userBookAssociationOperations.getReadBooksWithPagination).toHaveBeenCalledWith(
-        1, // userId
+        '1', // userId
         1, // page
         10, // limit
         'title', // sortBy
@@ -167,7 +167,7 @@ describe('/api/user-books', () => {
       expect(response.status).toBe(200)
       expect(data).toEqual(mockPaginatedResult)
       expect(userBookAssociationOperations.getReadBooksWithPagination).toHaveBeenCalledWith(
-        1, // userId
+        '1', // userId
         2, // page
         5, // limit
         'author', // sortBy
@@ -197,7 +197,7 @@ describe('/api/user-books', () => {
       expect(data).toEqual(mockPaginatedResult)
       // API passes through invalid parameters as-is
       expect(userBookAssociationOperations.getReadBooksWithPagination).toHaveBeenCalledWith(
-        1, // userId
+        '1', // userId
         NaN, // page (invalid)
         NaN, // limit (invalid)
         'invalid', // sortBy (invalid)
@@ -231,7 +231,7 @@ describe('/api/user-books', () => {
       expect(response.status).toBe(200)
       expect(data).toEqual(mockPaginatedResult)
       expect(userBookAssociationOperations.getReadBooksWithPagination).toHaveBeenCalledWith(
-        123, // userId from cookie
+        '123', // userId from cookie
         1, // page
         10, // limit
         'title', // sortBy
@@ -240,14 +240,7 @@ describe('/api/user-books', () => {
       )
     })
 
-    it('should use default user ID when no authentication is provided', async () => {
-      const mockPaginatedResult = {
-        books: [],
-        total: 0,
-        totalPages: 0,
-      }
-      vi.mocked(userBookAssociationOperations.getReadBooksWithPagination).mockReturnValue(mockPaginatedResult)
-
+    it('should return 401 when no authentication is provided', async () => {
       const request = createMockRequest({
         url: 'http://localhost:3000/api/user-books/read',
       }) as NextRequest
@@ -255,17 +248,9 @@ describe('/api/user-books', () => {
       const response = await getReadBooks(request)
       const data = await response.json()
 
-      expect(response.status).toBe(200)
-      expect(data).toEqual(mockPaginatedResult)
-      // Should use default user ID 1
-      expect(userBookAssociationOperations.getReadBooksWithPagination).toHaveBeenCalledWith(
-        1, // default userId
-        1, // page
-        10, // limit
-        'title', // sortBy
-        'asc', // sortOrder
-        '' // search (empty string)
-      )
+      expect(response.status).toBe(401)
+      expect(data.error).toBe('Unauthorized')
+      expect(userBookAssociationOperations.getReadBooksWithPagination).not.toHaveBeenCalled()
     })
 
     it('should handle database errors gracefully', async () => {
@@ -296,9 +281,8 @@ describe('/api/user-books', () => {
       const response = await getReadBooks(request)
       const data = await response.json()
 
-      expect(response.status).toBe(500)
-      // API returns 500 for malformed tokens
-      expect(data.error).toBe('Internal server error')
+      expect(response.status).toBe(401)
+      expect(data.error).toBe('Unauthorized')
     })
 
     it('should return empty results when user has no read books', async () => {
