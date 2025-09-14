@@ -101,8 +101,8 @@ export default function GenreList() {
     const currentSortOrder = searchParams.get('sortOrder') || 'asc';
     
     return [...genres].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: number | string;
+      let bValue: number | string;
       
       // Handle different sort fields
       if (currentSortBy === 'bookCount') {

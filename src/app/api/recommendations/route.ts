@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userBookAssociationOperations, bookOperations } from '@/lib/database-factory';
+import { userBookAssociationOperations, bookOperations } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/server-auth';
 
 interface BookRecommendation {

@@ -1,7 +1,7 @@
 import { config } from './config';
 
 // Import all database implementations
-import * as SQLiteDB from './database';
+import * as SQLiteDB from './sqlite-database';
 import * as DynamoDB from './dynamodb-database';
 
 // Export the appropriate database operations based on configuration

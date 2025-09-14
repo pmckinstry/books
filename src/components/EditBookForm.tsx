@@ -57,7 +57,7 @@ export default function EditBookForm({ bookId }: EditBookFormProps) {
             setSelectedGenres(bookData.genres as string[]);
           } else {
             // If genres are objects, extract the IDs
-            setSelectedGenres((bookData.genres as any[]).map((g: {id: string}) => g.id));
+            setSelectedGenres((bookData.genres as Array<{ id: string }>).map((g) => g.id));
           }
         } else {
           setSelectedGenres([]);

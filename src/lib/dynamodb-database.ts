@@ -184,7 +184,7 @@ export const userOperations = {
     try {
       const hashedPassword = bcrypt.hashSync(data.password, 10);
       const userId = generateId();
-      const now = getCurrentTimestamp();
+      // const now = getCurrentTimestamp();
       
       const userData: User = {
         id: userId,
@@ -496,7 +496,7 @@ export const userBookAssociationOperations = {
         };
       });
 
-      let books = (await Promise.all(bookPromises)).filter(book => book !== null) as any[];
+      let books = (await Promise.all(bookPromises)).filter((book): book is (BookWithGenres & { user_association: UserBookAssociation }) => book !== null);
 
       // Apply search filter if provided
       if (search && search.trim()) {
@@ -510,7 +510,8 @@ export const userBookAssociationOperations = {
 
       // Apply sorting
       books.sort((a, b) => {
-        let aValue: any, bValue: any;
+        let aValue: number | string;
+        let bValue: number | string;
         
         switch (sortBy) {
           case 'title':
@@ -627,7 +628,8 @@ export const bookOperations = {
       }
       
       // Return book with genres, excluding the genres field from the original book
-      const { genres: _, ...bookWithoutGenres } = book;
+      /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+      const { genres: _omitGenres, ...bookWithoutGenres } = book;
       return { ...bookWithoutGenres, genres };
     } catch (error) {
       console.error('Error getting book by ID:', error);
@@ -671,7 +673,8 @@ export const bookOperations = {
           }
           
           // Return book with genres, excluding the genres field from the original book
-          const { genres: _, ...bookWithoutGenres } = book;
+          /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+          const { genres: _omitGenres, ...bookWithoutGenres } = book;
           return { ...bookWithoutGenres, genres };
         })
       );
@@ -706,7 +709,7 @@ export const bookOperations = {
       // Check cache first
       const cached = booksCache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < BOOKS_CACHE_TTL) {
-        return cached.books as any;
+        return cached.result;
       }
       
       // Get all books first (we'll filter and paginate in memory)
@@ -781,7 +784,8 @@ export const bookOperations = {
       
       // Apply dynamic sorting based on parameters
       filteredBooks.sort((a, b) => {
-        let aValue: any, bValue: any;
+        let aValue: number | string;
+        let bValue: number | string;
         
         switch (sortBy) {
           case 'title':
@@ -839,7 +843,7 @@ export const bookOperations = {
       };
       
       // Cache the result
-      booksCache.set(cacheKey, { books: result as any, timestamp: Date.now() });
+      booksCache.set(cacheKey, { result, timestamp: Date.now() });
       
       return result;
     } catch (error) {
@@ -972,7 +976,7 @@ export const bookOperations = {
       // Prepare the update expression
       const updateExpressions: string[] = [];
       const expressionAttributeNames: Record<string, string> = {};
-      const expressionAttributeValues: Record<string, any> = {};
+      const expressionAttributeValues: Record<string, unknown> = {};
 
       // Add fields to update
       if (data.title !== undefined) {
@@ -1074,7 +1078,7 @@ export const bookOperations = {
           try {
             const genre = await genreOperations.getById(genreId);
             return genre;
-          } catch (error) {
+          } catch {
             return null;
           }
         })
@@ -1203,7 +1207,8 @@ export const bookOperations = {
           }
           
           // Return book with genres, excluding the genres field from the original book
-          const { genres: _, ...bookWithoutGenres } = book;
+          /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+          const { genres: _omitGenres2, ...bookWithoutGenres } = book;
           return { ...bookWithoutGenres, genres };
         })
       );
@@ -1229,7 +1234,7 @@ const genreCache = new Map<string, { genre: Genre; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Books cache for performance optimization
-const booksCache = new Map<string, { books: BookWithGenres[]; timestamp: number }>();
+const booksCache = new Map<string, { result: { books: BookWithGenres[]; total: number; totalPages: number; hasMore: boolean }; timestamp: number }>();
 const BOOKS_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
 // Genre operations
@@ -1238,7 +1243,6 @@ export const genreOperations = {
   create: async (data: { name: string; description?: string }): Promise<Genre | null> => {
     try {
       const genreId = generateId();
-      const now = getCurrentTimestamp();
       
       const genreData: Genre = {
         id: genreId,
@@ -1530,7 +1534,7 @@ export const readingListOperations = {
         // TODO: Implement proper genre handling for DynamoDB
         const genres: Array<{id: string; name: string}> = [];
 
-        const book = bookResult.Item as any;
+        const book = bookResult.Item as Book;
         const bookWithGenres = {
           id: book.id,
           title: book.title,
@@ -1555,7 +1559,7 @@ export const readingListOperations = {
         };
       });
 
-      const books = (await Promise.all(bookPromises)).filter(book => book !== null) as any[];
+      const books = (await Promise.all(bookPromises)).filter((book): book is (BookWithGenres & { reading_list_book: ReadingListBook }) => book !== null);
       
       return {
         ...readingList,
@@ -1602,7 +1606,7 @@ export const readingListOperations = {
         }));
         
         return result.Items as ReadingList[] || [];
-      } catch (indexError) {
+      } catch {
         // Fallback: scan and filter if index doesn't exist
         console.log('is_public-index not available, falling back to scan with filter');
         const result = await docClient.send(new ScanCommand({

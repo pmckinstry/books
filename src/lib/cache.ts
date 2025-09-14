@@ -47,10 +47,10 @@ class Cache<T> {
 }
 
 // Cache instances for different data types
-export const booksCache = new Cache<any[]>(10 * 60 * 1000); // 10 minutes
-export const genresCache = new Cache<any[]>(30 * 60 * 1000); // 30 minutes
-export const readingListsCache = new Cache<any[]>(5 * 60 * 1000); // 5 minutes
-export const userAssociationsCache = new Cache<any[]>(2 * 60 * 1000); // 2 minutes
+export const booksCache = new Cache<unknown[]>(10 * 60 * 1000); // 10 minutes
+export const genresCache = new Cache<unknown[]>(30 * 60 * 1000); // 30 minutes
+export const readingListsCache = new Cache<unknown[]>(5 * 60 * 1000); // 5 minutes
+export const userAssociationsCache = new Cache<unknown[]>(2 * 60 * 1000); // 2 minutes
 
 // Cache keys
 export const CACHE_KEYS = {

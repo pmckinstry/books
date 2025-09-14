@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { userBookAssociationOperations } from '@/lib/database-factory';
+import { userBookAssociationOperations } from '@/lib/database';
 import { getUserIdFromRequest } from '@/lib/server-auth';
 
 export async function GET(request: NextRequest) {

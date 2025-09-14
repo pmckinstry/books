@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bookOperations, CreateBookData, BookFilters } from '@/lib/database-factory';
+import { bookOperations, CreateBookData, BookFilters } from '@/lib/database';
 
 // GET /api/books - Get all books (with optional pagination)
 export async function GET(request: NextRequest) {

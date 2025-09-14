@@ -5,14 +5,23 @@ export async function POST() {
     const response = NextResponse.json({ message: 'Logout successful' });
     const isProd = process.env.NODE_ENV === 'production';
     // Clear cookies by setting maxAge to 0
-    response.cookies.set('user-id', '', {
+    type CookieSetter = {
+      set: (
+        name: string,
+        value: string,
+        options: { httpOnly?: boolean; sameSite?: 'lax' | 'strict' | 'none'; secure?: boolean; path?: string; maxAge?: number }
+      ) => void
+    }
+    type ResponseWithOptionalCookies = NextResponse & { cookies?: CookieSetter }
+    const resWithCookies = response as ResponseWithOptionalCookies
+    resWithCookies.cookies?.set('user-id', '', {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
       path: '/',
       maxAge: 0
     });
-    response.cookies.set('csrf-token', '', {
+    resWithCookies.cookies?.set('csrf-token', '', {
       httpOnly: false,
       sameSite: 'lax',
       secure: isProd,

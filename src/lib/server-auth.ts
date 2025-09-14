@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { userOperations } from './database-factory';
+import { userOperations } from './database';
 
 // Get user ID from cookie `user-id` or Authorization header (Bearer <base64>{"userId":...})
 export function getUserIdFromRequest(request: NextRequest): string | null {

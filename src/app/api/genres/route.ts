@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { genreOperations, bookOperations } from '@/lib/database-factory';
+import { genreOperations, bookOperations } from '@/lib/database';
 
 export async function GET() {
   try {
