@@ -16,9 +16,9 @@ export async function GET(request: NextRequest) {
 
     let readingLists;
     if (type === 'public') {
-      readingLists = await readingListOperations.getPublic();
+      readingLists = await (readingListOperations as any).getPublic();
     } else {
-      readingLists = await readingListOperations.getByUser(user.id);
+      readingLists = await (readingListOperations as any).getByUser(user.id);
     }
 
     return NextResponse.json({ readingLists });
