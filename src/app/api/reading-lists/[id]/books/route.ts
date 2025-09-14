@@ -90,7 +90,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 });
     }
 
-    const success = await (readingListOperations as any).removeBook(readingListId, bookId);
+    const success = await readingListOperations.removeBook(readingListId, bookId);
     if (!success) {
       return NextResponse.json({ error: 'Failed to remove book from reading list' }, { status: 500 });
     }
