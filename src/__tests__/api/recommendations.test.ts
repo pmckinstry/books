@@ -1,7 +1,7 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 // Mock the database module with inline object literals
-vi.mock('@/lib/database', () => ({
+vi.mock('@/lib/database-factory', () => ({
   userBookAssociationOperations: {
     getByUser: vi.fn(),
     getReadBooksWithPagination: vi.fn(),
@@ -41,7 +41,7 @@ import {
   userBookAssociationOperations, 
   bookOperations,
   readingListOperations 
-} from '@/lib/database'
+} from '@/lib/database-factory'
 import { 
   createMockRequest, 
   createMockRequestWithAuth,
@@ -152,9 +152,9 @@ describe('/api/recommendations', () => {
       const request = createMockRequest() as NextRequest; // No auth header
       const response = await getUserRecommendations(request);
 
-      expect(response.status).toBe(200); // Uses default user ID 1
+      expect(response.status).toBe(401); // Unauthorized without auth
       const data = await response.json();
-      expect(data).toHaveProperty('recommendations');
+      expect(data).toHaveProperty('error', 'Unauthorized');
     })
 
     it('should handle database errors gracefully', async () => {
@@ -322,13 +322,13 @@ describe('/api/recommendations', () => {
       expect(data).toHaveProperty('error', 'Reading list not found');
     })
 
-    it('should return 400 for invalid reading list ID', async () => {
+    it('should return 404 for invalid reading list ID', async () => {
       const request = new NextRequest('http://localhost:3000/api/recommendations/reading-list/invalid');
       const response = await getReadingListRecommendations(request, { params: Promise.resolve({ id: 'invalid' }) });
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(404);
       const data = await response.json();
-      expect(data).toHaveProperty('error', 'Invalid reading list ID');
+      expect(data).toHaveProperty('error', 'Reading list not found');
     })
 
     it('should handle database errors gracefully', async () => {
