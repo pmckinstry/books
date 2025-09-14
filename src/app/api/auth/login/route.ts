@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { userOperations } from '@/lib/database-factory';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,10 +34,32 @@ export async function POST(request: NextRequest) {
       hasPassword: !!user.password
     });
 
-    return NextResponse.json({
+    // Set user-id cookie (HttpOnly) and csrf-token cookie (readable for double-submit)
+    const response = NextResponse.json({
       message: 'Login successful',
       user
     });
+
+    const isProd = process.env.NODE_ENV === 'production';
+    const oneWeek = 7 * 24 * 60 * 60; // seconds
+    const csrfToken = uuidv4();
+
+    response.cookies.set('user-id', String(user.id), {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: oneWeek
+    });
+    response.cookies.set('csrf-token', csrfToken, {
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/',
+      maxAge: oneWeek
+    });
+
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(

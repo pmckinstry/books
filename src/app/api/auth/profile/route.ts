@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { userOperations } from '@/lib/database-factory';
+import { getUserIdFromRequest, validateCsrf } from '@/lib/server-auth';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user ID from authorization header
-    const authHeader = request.headers.get('authorization');
-    
-    let userId: number | null = null;
-    
-    // Try to get user ID from authorization header first
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      try {
-        const decoded = JSON.parse(atob(token));
-        userId = decoded.userId;
-      } catch (error) {
-        console.error('Error parsing auth token:', error);
-      }
-    }
+    const userId = getUserIdFromRequest(request);
     
     // If no user ID found, return 401
     if (!userId) {
@@ -76,19 +63,15 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Get user ID from authorization header
-    const authHeader = request.headers.get('authorization');
-    let userId: string | null = null;
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      try {
-        const decoded = JSON.parse(atob(token));
-        userId = decoded.userId;
-      } catch (error) {
-        console.error('Error parsing auth token:', error);
-      }
+    // CSRF protection: require x-csrf-token header matching csrf-token cookie
+    if (!validateCsrf(request)) {
+      return NextResponse.json(
+        { error: 'CSRF validation failed' },
+        { status: 403 }
+      );
     }
+
+    const userId = getUserIdFromRequest(request);
 
     if (!userId) {
       return NextResponse.json(

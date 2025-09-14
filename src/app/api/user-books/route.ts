@@ -1,27 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { userBookAssociationOperations, userOperations, bookOperations } from '@/lib/database-factory';
+import { validateCsrf, getUserIdFromRequest } from '@/lib/server-auth';
 
 // GET /api/user-books - Get user's book associations
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 10;
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
-    }
 
-    // Validate userId is a non-empty string
-    if (userId.trim() === '') {
-      return NextResponse.json(
-        { error: 'Invalid user ID' },
-        { status: 400 }
-      );
+    const userId = getUserIdFromRequest(request);
+    if (!userId || userId.trim() === '') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Debug: Check if user exists
@@ -56,11 +46,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { user_id, book_id, read_status, rating, comments } = body;
+    const { book_id, read_status, rating, comments } = body;
 
     console.log('Creating user-book association - Raw body:', body);
-    console.log('Creating user-book association - user_id type:', typeof user_id, 'value:', user_id);
     console.log('Creating user-book association - book_id type:', typeof book_id, 'value:', book_id);
+
+    // Derive user ID from cookie/authorization instead of trusting body
+    const user_id = getUserIdFromRequest(request);
 
     if (!user_id || !book_id) {
       return NextResponse.json(
@@ -71,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // Validate user_id and book_id are strings
     if (typeof user_id !== 'string' || user_id.trim() === '') {
-      console.error('Validation failed - user_id is not a valid string:', typeof user_id, user_id);
+      console.error('Validation failed - derived user_id is not a valid string:', typeof user_id, user_id);
       return NextResponse.json(
         { error: 'User ID must be a valid string' },
         { status: 400 }
@@ -131,6 +123,14 @@ export async function POST(request: NextRequest) {
     };
 
     console.log('Creating association with data:', associationData);
+
+    // CSRF protection for creating/updating associations
+    if (!validateCsrf(request)) {
+      return NextResponse.json(
+        { error: 'CSRF validation failed' },
+        { status: 403 }
+      );
+    }
 
     const association = await userBookAssociationOperations.upsert(associationData);
     return NextResponse.json(association, { status: 201 });

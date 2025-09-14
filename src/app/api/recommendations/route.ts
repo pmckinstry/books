@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { userBookAssociationOperations, bookOperations } from '@/lib/database-factory';
+import { getUserIdFromRequest } from '@/lib/server-auth';
 
 interface BookRecommendation {
   title: string;
@@ -10,45 +11,11 @@ interface BookRecommendation {
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user ID from request using the same pattern as other API routes
-    const cookieHeader = request.headers.get('cookie');
-    let userId: string | null = null;
+    const userId = getUserIdFromRequest(request);
     
-    if (cookieHeader) {
-      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=');
-        acc[key] = value;
-        return acc;
-      }, {} as Record<string, string>);
-      
-      // Try to get user ID from a custom cookie
-      if (cookies['user-id']) {
-        userId = cookies['user-id'];
-      }
-    }
-    
-    // Fallback: try to get from Authorization header
+    // If still no user, reject
     if (!userId) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.substring(7);
-        // In a real app, you'd decode the JWT token here
-        // For now, we'll use a simple approach
-        try {
-          const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
-          userId = decoded.userId;
-        } catch {
-          // Invalid token
-        }
-      }
-    }
-    
-    // For now, if we can't get the user ID, we'll use a default
-    // This should be replaced with proper authentication
-    if (!userId) {
-      // Return an error in production, but for demo purposes, use admin user ID
-      console.warn('No user ID found in request, using default user ID 1cf02876-41b7-4019-adb1-7d165b6770a3');
-      userId = '1cf02876-41b7-4019-adb1-7d165b6770a3';
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     console.log('Recommendations API - Using userId:', userId);

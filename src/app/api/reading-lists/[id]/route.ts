@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readingListOperations } from '@/lib/database-factory';
+import { getUserFromRequest, validateCsrf } from '@/lib/server-auth';
 
-// Simple auth check - in a real app you'd use proper JWT/session auth
-async function getCurrentUser(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return { id: '1cf02876-41b7-4019-adb1-7d165b6770a3' }; // Actual admin user UUID
-  }
-  
-  return null;
-}
+// Auth helpers are imported from server-auth
 
 export async function GET(
   request: NextRequest,
@@ -37,7 +29,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getCurrentUser(request);
+    const user = getUserFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -56,6 +48,11 @@ export async function PUT(
 
     const body = await request.json();
     const { name, description, is_public } = body;
+
+    // CSRF protection for updating a list
+    if (!validateCsrf(request)) {
+      return NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 });
+    }
 
     const updatedReadingList = await readingListOperations.update(id, {
       name: name?.trim(),
@@ -79,7 +76,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getCurrentUser(request);
+    const user = getUserFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -94,6 +91,11 @@ export async function DELETE(
 
     if (readingList.user_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // CSRF protection for deleting a list
+    if (!validateCsrf(request)) {
+      return NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 });
     }
 
     const success = await readingListOperations.delete(id);
