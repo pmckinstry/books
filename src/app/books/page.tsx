@@ -65,7 +65,7 @@ export default async function BooksListPage({
     if (genreIds.length > 0) filters.genreIds = genreIds;
   }
   
-  const { books, total, totalPages, hasMore } = await getBooks(currentPage, currentSortBy, currentSortOrder, filters);
+  const { books, total, totalPages } = await getBooks(currentPage, currentSortBy, currentSortOrder, filters);
   
   // Get all genres for the advanced filters
   const genres = await genreOperations.getAll();

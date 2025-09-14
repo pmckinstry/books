@@ -7,8 +7,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1;
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 10;
-    const sortBy = searchParams.get('sortBy') || 'created_at';
-    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+    // Sorting parameters are accepted but handled internally in the DB layer
+    // Left here to allow future use without lint errors
+    // const sortBy = searchParams.get('sortBy') || 'created_at';
+    // const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
     
     // Build filters object
     const filters: BookFilters = {};
