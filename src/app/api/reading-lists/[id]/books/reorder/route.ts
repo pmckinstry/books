@@ -38,7 +38,7 @@ export async function PUT(
       return NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 });
     }
 
-    const success = await (readingListOperations as any).reorderBooks(readingListId, book_ids);
+    const success = await readingListOperations.reorderBooks(readingListId, book_ids);
     if (!success) {
       return NextResponse.json({ error: 'Failed to reorder books in reading list' }, { status: 500 });
     }
