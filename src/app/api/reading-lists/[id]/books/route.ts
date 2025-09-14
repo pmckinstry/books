@@ -1,23 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readingListOperations } from '@/lib/database-factory';
+import { getUserFromRequest, validateCsrf } from '@/lib/server-auth';
 
-// Simple auth check - in a real app you'd use proper JWT/session auth
-async function getCurrentUser(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return { id: '1cf02876-41b7-4019-adb1-7d165b6770a3' }; // Actual admin user UUID
-  }
-  
-  return null;
-}
+// Auth helpers are imported from server-auth
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getCurrentUser(request);
+    const user = getUserFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -39,6 +31,11 @@ export async function POST(
 
     if (!book_id) {
       return NextResponse.json({ error: 'Valid book ID is required' }, { status: 400 });
+    }
+
+    // CSRF protection for modifying list contents
+    if (!validateCsrf(request)) {
+      return NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 });
     }
 
     const readingListBook = await readingListOperations.addBook({
@@ -64,7 +61,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getCurrentUser(request);
+    const user = getUserFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -86,6 +83,11 @@ export async function DELETE(
 
     if (!bookId) {
       return NextResponse.json({ error: 'Valid book ID is required' }, { status: 400 });
+    }
+
+    // CSRF protection for modifying list contents
+    if (!validateCsrf(request)) {
+      return NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 });
     }
 
     const success = await (readingListOperations as any).removeBook(readingListId, bookId);

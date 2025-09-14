@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { userBookAssociationOperations } from '@/lib/database-factory';
+import { validateCsrf, getUserIdFromRequest } from '@/lib/server-auth';
 
 // GET /api/user-books/[bookId] - Get user's association for a specific book
 export async function GET(
@@ -7,22 +8,9 @@ export async function GET(
   { params }: { params: Promise<{ bookId: string }> }
 ) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate userId is a non-empty string
-    if (userId.trim() === '') {
-      return NextResponse.json(
-        { error: 'Invalid user ID' },
-        { status: 400 }
-      );
+    const userId = getUserIdFromRequest(request);
+    if (!userId || userId.trim() === '') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resolvedParams = await params;
@@ -61,21 +49,12 @@ export async function PUT(
 ) {
   try {
     const body = await request.json();
-    const { user_id, read_status, rating, comments } = body;
+    const { read_status, rating, comments } = body;
+    // Derive user ID from cookie/authorization instead of trusting body
+    const user_id = getUserIdFromRequest(request);
 
-    if (!user_id) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate user_id is a non-empty string
-    if (user_id.trim() === '') {
-      return NextResponse.json(
-        { error: 'Invalid user ID' },
-        { status: 400 }
-      );
+    if (!user_id || user_id.trim() === '') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resolvedParams = await params;
@@ -111,6 +90,14 @@ export async function PUT(
       comments
     };
 
+    // CSRF protection for updates
+    if (!validateCsrf(request)) {
+      return NextResponse.json(
+        { error: 'CSRF validation failed' },
+        { status: 403 }
+      );
+    }
+
     const association = await userBookAssociationOperations.update(user_id, bookId, updateData);
     if (!association) {
       return NextResponse.json(
@@ -135,22 +122,10 @@ export async function DELETE(
   { params }: { params: Promise<{ bookId: string }> }
 ) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Validate userId is a non-empty string
-    if (userId.trim() === '') {
-      return NextResponse.json(
-        { error: 'Invalid user ID' },
-        { status: 400 }
-      );
+    // Derive user ID from cookie/authorization instead of trusting query
+    const userId = getUserIdFromRequest(request);
+    if (!userId || userId.trim() === '') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resolvedParams = await params;
@@ -161,6 +136,14 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'Invalid book ID' },
         { status: 400 }
+      );
+    }
+
+    // CSRF protection for deletions
+    if (!validateCsrf(request)) {
+      return NextResponse.json(
+        { error: 'CSRF validation failed' },
+        { status: 403 }
       );
     }
 
