@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Genre, BookWithGenres } from '@/lib/database-factory';
 import BookTable from '@/components/BookTable';
+import { useSearchParams } from 'next/navigation';
 
 interface GenreViewProps {
   genreId: string;
@@ -14,10 +15,13 @@ export default function GenreView({ genreId }: GenreViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [books, setBooks] = useState<BookWithGenres[]>([]);
+  const searchParams = useSearchParams();
+  const sortBy = searchParams.get('sortBy') || 'title';
+  const sortOrder = searchParams.get('sortOrder') === 'desc' ? 'desc' : 'asc';
 
   const fetchGenre = useCallback(async () => {
     try {
-      const response = await fetch(`/api/genres/${genreId}`);
+      const response = await fetch(`/api/genres/${genreId}?sortBy=${encodeURIComponent(sortBy)}&sortOrder=${encodeURIComponent(sortOrder)}`);
       if (!response.ok) {
         throw new Error('Failed to fetch genre');
       }
@@ -29,7 +33,7 @@ export default function GenreView({ genreId }: GenreViewProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [genreId]);
+  }, [genreId, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchGenre();

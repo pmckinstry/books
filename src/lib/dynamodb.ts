@@ -1,5 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { isDynamoDBEnabled } from './config';
 
 // DynamoDB configuration
 const dynamoConfig: {
@@ -16,7 +17,7 @@ const dynamoConfig: {
 };
 
 // For local development, use DynamoDB Local
-if (process.env.DYNAMODB_LOCAL === 'true') {
+if (isDynamoDBEnabled() && process.env.DYNAMODB_LOCAL === 'true') {
   dynamoConfig.endpoint = 'http://localhost:8000';
   dynamoConfig.credentials = {
     accessKeyId: 'dummy',
@@ -30,13 +31,19 @@ if (process.env.DYNAMODB_LOCAL === 'true') {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
     };
-    console.log('☁️ Using AWS DynamoDB configuration with access keys');
+    if (isDynamoDBEnabled()) {
+      console.log('☁️ Using AWS DynamoDB configuration with access keys');
+    }
   } else if (process.env.AWS_PROFILE) {
     // Use AWS profile if no access keys provided
-    console.log('☁️ Using AWS DynamoDB configuration with profile:', process.env.AWS_PROFILE);
+    if (isDynamoDBEnabled()) {
+      console.log('☁️ Using AWS DynamoDB configuration with profile:', process.env.AWS_PROFILE);
+    }
   } else {
     // Use default AWS credentials (IAM roles, etc.)
-    console.log('☁️ Using AWS DynamoDB configuration with default credentials');
+    if (isDynamoDBEnabled()) {
+      console.log('☁️ Using AWS DynamoDB configuration with default credentials');
+    }
   }
 }
 

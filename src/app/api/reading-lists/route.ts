@@ -6,9 +6,7 @@ import { getUserFromRequest } from '@/lib/server-auth';
 
 export async function GET(request: NextRequest) {
   try {
-    // Only accept Authorization-based auth for this endpoint (ignore cookies for tests)
-    const hasAuthHeader = !!request.headers.get('authorization');
-    const user = hasAuthHeader ? getUserFromRequest(request) : null;
+    const user = getUserFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -20,7 +18,7 @@ export async function GET(request: NextRequest) {
     if (type === 'public') {
       readingLists = await readingListOperations.getPublic();
     } else {
-      readingLists = await readingListOperations.getByUser(Number(user.id));
+      readingLists = await readingListOperations.getByUser(user.id);
     }
 
     return NextResponse.json({ readingLists });

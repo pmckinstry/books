@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { userBookAssociationOperations } from '@/lib/database';
 
+const normalizeId = (value: string | null) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const numeric = Number(trimmed);
+  if (Number.isFinite(numeric) && numeric > 0 && trimmed === String(numeric)) {
+    return numeric;
+  }
+  return trimmed;
+};
+
 // GET /api/user-books/[bookId] - Get user's association for a specific book
 export async function GET(
   request: NextRequest,
@@ -9,26 +20,18 @@ export async function GET(
   try {
     const { searchParams } = new URL(request.url);
     const userIdParam = searchParams.get('userId');
-    if (!userIdParam) {
+    const normalizedUserId = normalizeId(userIdParam);
+    if (!normalizedUserId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-    }
-    const userIdNum = Number(userIdParam);
-    if (!Number.isFinite(userIdNum) || userIdNum <= 0) {
-      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
     }
 
     const resolvedParams = await params;
-    const bookIdNum = Number(resolvedParams.bookId);
-    if (!Number.isFinite(bookIdNum) || bookIdNum <= 0) {
-      return NextResponse.json({ error: 'Invalid book ID' }, { status: 400 });
-    }
+    const normalizedBookId = normalizeId(resolvedParams.bookId) ?? resolvedParams.bookId;
 
-    const association = await userBookAssociationOperations.getByUserAndBook(userIdNum as string | number, bookIdNum as string | number);
+    const association = await userBookAssociationOperations.getByUserAndBook(normalizedUserId, normalizedBookId);
+
     if (!association) {
-      return NextResponse.json(
-        { error: 'Association not found' },
-        { status: 404 }
-      );
+      return NextResponse.json(null, { status: 200 });
     }
 
     return NextResponse.json(association);
@@ -49,22 +52,13 @@ export async function PUT(
   try {
     const body = await request.json();
     const { user_id, read_status, rating, comments } = body;
-    if (user_id === undefined || user_id === null) {
+    const normalizedUserId = normalizeId(user_id ?? null);
+    if (!normalizedUserId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    if (typeof user_id === 'string') {
-      const n = Number(user_id);
-      if (!Number.isFinite(n) || n <= 0) {
-        return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
-      }
-    }
-
     const resolvedParams = await params;
-    const bookIdNum = Number(resolvedParams.bookId);
-    if (!Number.isFinite(bookIdNum) || bookIdNum <= 0) {
-      return NextResponse.json({ error: 'Invalid book ID' }, { status: 400 });
-    }
+    const normalizedBookId = normalizeId(resolvedParams.bookId) ?? resolvedParams.bookId;
 
     // Validate read_status if provided
     if (read_status && !['unread', 'reading', 'read'].includes(read_status)) {
@@ -88,7 +82,7 @@ export async function PUT(
       comments
     };
 
-    const association = await userBookAssociationOperations.update(user_id as string | number, bookIdNum as string | number, updateData);
+    const association = await userBookAssociationOperations.update(normalizedUserId, normalizedBookId, updateData);
     if (!association) {
       return NextResponse.json(
         { error: 'Association not found' },
@@ -114,21 +108,15 @@ export async function DELETE(
   try {
     const { searchParams } = new URL(request.url);
     const userIdParam = searchParams.get('userId');
-    if (!userIdParam) {
+    const normalizedUserId = normalizeId(userIdParam);
+    if (!normalizedUserId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-    }
-    const userIdNum = Number(userIdParam);
-    if (!Number.isFinite(userIdNum) || userIdNum <= 0) {
-      return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
     }
 
     const resolvedParams = await params;
-    const bookIdNum = Number(resolvedParams.bookId);
-    if (!Number.isFinite(bookIdNum) || bookIdNum <= 0) {
-      return NextResponse.json({ error: 'Invalid book ID' }, { status: 400 });
-    }
+    const normalizedBookId = normalizeId(resolvedParams.bookId) ?? resolvedParams.bookId;
 
-    const success = await userBookAssociationOperations.delete(userIdNum as string | number, bookIdNum as string | number);
+    const success = await userBookAssociationOperations.delete(normalizedUserId, normalizedBookId);
     if (!success) {
       return NextResponse.json(
         { error: 'Association not found' },

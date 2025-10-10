@@ -9,11 +9,13 @@ interface UserBookAssociationProps {
   initialAssociation?: DBUserBookAssociation | null;
 }
 
-export default function UserBookAssociation({ bookId }: UserBookAssociationProps) {
-  const [association, setAssociation] = useState<DBUserBookAssociation | null>(null);
-  const [readStatus, setReadStatus] = useState<'unread' | 'reading' | 'read'>('unread');
-  const [rating, setRating] = useState<number>(0);
-  const [comments, setComments] = useState<string>('');
+export default function UserBookAssociation({ bookId, initialAssociation }: UserBookAssociationProps) {
+  const [association, setAssociation] = useState<DBUserBookAssociation | null>(initialAssociation || null);
+  const [readStatus, setReadStatus] = useState<'unread' | 'reading' | 'read'>(
+    (initialAssociation?.read_status as 'unread' | 'reading' | 'read') || 'unread'
+  );
+  const [rating, setRating] = useState<number>(initialAssociation?.rating ?? 0);
+  const [comments, setComments] = useState<string>(initialAssociation?.comments ?? '');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState(false);
@@ -72,10 +74,22 @@ export default function UserBookAssociation({ bookId }: UserBookAssociationProps
         const response = await fetch(`/api/user-books/${bookIdString}?userId=${userId}`);
         if (response.ok) {
           const data = await response.json();
-          setAssociation(data);
-          setReadStatus(data.read_status || 'unread');
-          setRating(data.rating || 0);
-          setComments(data.comments || '');
+          if (data) {
+            setAssociation(data);
+            setReadStatus(data.read_status || 'unread');
+            setRating(data.rating || 0);
+            setComments(data.comments || '');
+          } else {
+            setAssociation(null);
+            setReadStatus('unread');
+            setRating(0);
+            setComments('');
+          }
+        } else if (response.status === 404) {
+          setAssociation(null);
+          setReadStatus('unread');
+          setRating(0);
+          setComments('');
         }
       } catch (error) {
         console.error('Error fetching initial association:', error);

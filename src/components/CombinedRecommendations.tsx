@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import RecommendationsList from './RecommendationsList';
 import TasteDiveRecommendations from './TasteDiveRecommendations';
 import GoogleBooksRecommendations from './GoogleBooksRecommendations';
+import { getCurrentUserIdClient } from '@/lib/auth';
 
 interface Recommendation {
   title: string;
@@ -19,30 +20,57 @@ interface CombinedRecommendationsProps {
   bookAuthor?: string;
 }
 
+const encodeAuthToken = (payload: string) => {
+  if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
+    return window.btoa(payload);
+  }
+  return Buffer.from(payload).toString('base64');
+};
+
 export default function CombinedRecommendations({ 
   userId, 
   readingListId, 
   bookTitle, 
   bookAuthor 
 }: CombinedRecommendationsProps) {
+  const [resolvedUserId, setResolvedUserId] = useState<string | undefined>(userId);
   const [internalRecommendations, setInternalRecommendations] = useState<Recommendation[]>([]);
   const [internalLoading, setInternalLoading] = useState(true);
   const [internalError, setInternalError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'internal' | 'tastedive' | 'google'>('internal');
 
   useEffect(() => {
+    if (userId) {
+      setResolvedUserId(userId);
+      return;
+    }
+
+    const localUserId = getCurrentUserIdClient();
+    if (localUserId) {
+      setResolvedUserId(localUserId);
+    }
+  }, [userId]);
+
+  useEffect(() => {
     const fetchInternalRecommendations = async () => {
+      if (!readingListId && !resolvedUserId) {
+        setInternalLoading(false);
+        setInternalError(null);
+        return;
+      }
+
       setInternalLoading(true);
       setInternalError(null);
-      
+
       try {
         let url = '/api/recommendations';
         const headers: Record<string, string> = {};
         
         if (readingListId) {
           url = `/api/recommendations/reading-list/${readingListId}`;
-        } else if (userId) {
-          headers['Authorization'] = `Bearer ${Buffer.from(JSON.stringify({ userId })).toString('base64')}`;
+        } else if (resolvedUserId) {
+          const token = encodeAuthToken(JSON.stringify({ userId: resolvedUserId }));
+          headers['Authorization'] = `Bearer ${token}`;
         }
 
         const res = await fetch(url, { headers });
@@ -62,7 +90,7 @@ export default function CombinedRecommendations({
     };
 
     fetchInternalRecommendations();
-  }, [userId, readingListId]);
+  }, [resolvedUserId, readingListId]);
 
   const hasInternalRecs = internalRecommendations.length > 0;
   const hasExternalRecs = bookTitle && bookTitle.trim() !== '';

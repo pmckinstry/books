@@ -5,6 +5,8 @@ import BookCoverImage from '@/components/BookCoverImage';
 import AuthDebugger from '@/components/AuthDebugger';
 import BookDetailsClient from '@/components/BookDetailsClient';
 import CombinedRecommendations from '@/components/CombinedRecommendations';
+import { cookies } from 'next/headers';
+import { userBookAssociationOperations } from '@/lib/database-factory';
 
 interface BookPageProps {
   params: Promise<{ id: string }>;
@@ -29,6 +31,19 @@ export default async function BookPage({ params }: BookPageProps) {
     
     if (!book) {
       notFound();
+    }
+
+    const cookieStore = await cookies();
+    const userCookie = cookieStore.get('user-id');
+    const userId = userCookie?.value;
+
+    let userAssociation = null;
+    if (userId) {
+      try {
+        userAssociation = await userBookAssociationOperations.getByUserAndBook(userId, String(book.id));
+      } catch (associationError) {
+        console.warn('Failed to load user-book association:', associationError);
+      }
     }
 
     return (
@@ -64,13 +79,14 @@ export default async function BookPage({ params }: BookPageProps) {
 
             {/* Book Details */}
             <div className="md:col-span-2">
-              <BookDetailsClient book={book} userBookAssociation={null} />
+              <BookDetailsClient book={book} userBookAssociation={userAssociation} />
             </div>
           </div>
         </div>
 
         {/* Recommendations Section */}
         <CombinedRecommendations 
+          userId={userId}
           bookTitle={book.title}
           bookAuthor={book.author}
         />

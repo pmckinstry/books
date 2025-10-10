@@ -73,35 +73,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate user_id must be positive number when provided as string/number
-    if (typeof user_id === 'string') {
-      const n = Number(user_id);
-      if (!Number.isFinite(n) || n <= 0) {
-        return NextResponse.json(
-          { error: 'User ID must be a valid positive number' },
-          { status: 400 }
-        );
+    const normalizeId = (value: unknown): string | number | null => {
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : null;
       }
-    }
-    if (typeof user_id === 'number' && user_id <= 0) {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+      }
+      return null;
+    };
+
+    const normalizedUserId = normalizeId(user_id);
+    if (
+      normalizedUserId === null ||
+      (typeof normalizedUserId === 'number' && normalizedUserId <= 0)
+    ) {
       return NextResponse.json(
-        { error: 'User ID must be a valid positive number' },
+        { error: 'User ID must be a non-empty string or positive number' },
         { status: 400 }
       );
     }
 
-    // Validate book_id similarly
-    if (typeof book_id === 'string') {
-      const n = Number(book_id);
-      if (!Number.isFinite(n) || n <= 0) {
-        return NextResponse.json(
-          { error: 'Book ID must be a valid positive number' },
-          { status: 400 }
-        );
-      }
-    }
-    if (typeof book_id === 'number' && book_id <= 0) {
+    const normalizedBookId = normalizeId(book_id);
+    if (
+      normalizedBookId === null ||
+      (typeof normalizedBookId === 'number' && normalizedBookId <= 0)
+    ) {
       return NextResponse.json(
-        { error: 'Book ID must be a valid positive number' },
+        { error: 'Book ID must be a non-empty string or positive number' },
         { status: 400 }
       );
     }
@@ -109,19 +109,19 @@ export async function POST(request: NextRequest) {
     console.log('Validation passed - proceeding with database operations');
 
     // Debug: Check if user exists
-    const user = await userOperations.getById(user_id as string | number);
+    const user = await userOperations.getById(normalizedUserId);
     if (!user) {
       return NextResponse.json(
-        { error: `User with ID ${user_id} does not exist` },
+        { error: `User with ID ${normalizedUserId} does not exist` },
         { status: 404 }
       );
     }
 
     // Debug: Check if book exists
-    const book = await bookOperations.getById(book_id as string | number);
+    const book = await bookOperations.getById(normalizedBookId);
     if (!book) {
       return NextResponse.json(
-        { error: `Book with ID ${book_id} does not exist` },
+        { error: `Book with ID ${normalizedBookId} does not exist` },
         { status: 404 }
       );
     }
@@ -143,8 +143,8 @@ export async function POST(request: NextRequest) {
     }
 
     const associationData = {
-      user_id,
-      book_id,
+      user_id: normalizedUserId,
+      book_id: normalizedBookId,
       read_status,
       rating,
       comments
